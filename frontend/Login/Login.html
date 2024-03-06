@@ -1,0 +1,93 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    
+    <meta charset="UTF-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Login Form</title>
+    <link rel="stylesheet" href="Login.css">
+    <link href='https://unpkg.com/boxicons@2.1.4/css/boxicons.min.css' rel='stylesheet'>
+
+    
+</head>
+
+<body>
+    
+    <div class="wrapper">
+        <form action="">
+
+            <h1>Login</h1>
+            <div class="input-box">
+                <input type="text" placeholder="Username" name="username" required>
+                <i class='bx bxs-user'></i>
+            </div>
+            
+            <div class="input-box">
+                <input id="passd" type="password" placeholder="Password" name="password" required>
+                <i class='bx bxs-lock-alt' ></i>
+            </div>
+
+            <input class="showpsd" type="checkbox" onclick="togglePasswordVisibility()"> Show Password
+
+
+            <div class="remember-forgot">
+
+                <a href="#">Forgot password?</a>
+            </div>
+
+            <button type="submit" class="btn">Login</button>
+
+            
+        </form>
+    </div>
+
+    <script>
+        // As the name suggests, it is for the checkbox of pass visibility
+        function togglePasswordVisibility() {
+          var passwordInput = document.getElementById('passd');
+          if (passwordInput.type === "password") {
+            passwordInput.type = "text";
+          } else {
+            passwordInput.type = "password";
+          }
+        }
+
+        // This is the login function in order to check the user from database
+        document.addEventListener('DOMContentLoaded', function() {
+              const loginForm = document.querySelector('form');
+              loginForm.addEventListener('submit', function(event) {
+                event.preventDefault(); // Prevent the default form submission
+          
+                const formData = new FormData(loginForm);
+                const username = formData.get('username');
+                const password = formData.get('password');
+          
+                fetch('/login', {
+                  method: 'POST',
+                  headers: {
+                    'Content-Type': 'application/json'
+                  },
+                  body: JSON.stringify({ username, password })
+                })
+                .then(response => response.json())
+                .then(data => {
+                  if (data.message === 'Login successful') {
+                    // Handle login success, e.g., redirect to another page
+                    window.location.href = '/success.html'; // Don't forget for the next commit to change success.html into the success page
+                  } else {
+                    // Handle login failure, e.g., show an error message
+                    alert('Invalid username or password');
+                  }
+                })
+                .catch(error => console.error('Error:', error));
+              });
+        });
+
+    </script>
+
+
+</body>
+
+</html>
