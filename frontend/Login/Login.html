@@ -2,7 +2,7 @@
 <html lang="en">
 
 <head>
-    
+
     <meta charset="UTF-8">
     <meta http-equiv="X-UA-Compatible" content="IE=edge">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -75,10 +75,14 @@
                 .then(data => {
                   if (data.message === 'Login successful') {
                     // Handle login success, e.g., redirect to another page
-                    window.location.href = '/success.html'; // Don't forget for the next commit to change success.html into the success page
+                    window.location.href = '/Platform.html'; // Don't forget for the next commit to change success.html into the success page
                   } else {
                     // Handle login failure, e.g., show an error message
                     alert('Invalid username or password');
+                    formData.set('username', ''); // Clear username from formData
+                    formData.set('password', ''); // Clear password from formData
+                    document.querySelector('input[name="username"]').value = ''; // Clear username input field
+                    document.querySelector('input[name="password"]').value = ''; // Clear password input field
                   }
                 })
                 .catch(error => console.error('Error:', error));
