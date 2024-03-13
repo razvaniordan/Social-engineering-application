@@ -46,8 +46,20 @@
             document.execCommand("copy");
         }
 
+        document.addEventListener('DOMContentLoaded', () => {
+            const token = localStorage.getItem('accessToken');
+            if (!token) {
+                alert('You need to login first');
+                window.location.href = '/'; // Redirect to login if no token
+            } else {
+                document.querySelector('.wrapper').style.display = 'block'; 
+            }
+        });
+
+
         function logout() {
-            window.location.href = 'Login.html'; // Redirect to the login page
+            localStorage.removeItem('accessToken');
+            window.location.href = '/'; // Redirect to the login page
         }
 
     </script>

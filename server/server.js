@@ -1,9 +1,14 @@
+require('dotenv').config();
+
 const express = require('express');
 const path = require('path');
 const { User } = require('./models');
 const bodyParser = require('body-parser');
 const bcrypt = require('bcryptjs');
 const cors = require('cors');
+const JWT = require('./JWT');
+const jwt = require('jsonwebtoken');
+const { access } = require('fs');
 
 
 const app = express();
@@ -23,18 +28,47 @@ app.get('/', (req, res) => {
     res.sendFile(path.join(__dirname, '../frontend/Login/Login.html'));
 });
 
+app.get('/home', (req, res) => {
+    res.sendFile(path.join(__dirname, '../frontend/Platform/Platform.html'));
+});
 
-app.post('/login', async (req, res) => {
+function authenticateToken(req, res, next) {
+    const authHeader = req.headers['authorization'];
+    console.log(authHeader);
+    const token = authHeader && authHeader.split(' ')[1];
+    console.log(token);
+    if (token == null) return res.sendStatus(401);
+    jwt.verify(token, process.env.ACCESS_TOKEN_SECRET, (err, user) => {
+        if (err) return res.sendStatus(403);
+        req.user = user;
+        next();
+    });
+}
+
+
+app.post('/login', async (req, res) => { 
     const { username, password } = req.body;
 
     const user = await User.findOne({ where: { username } });
 
     if (!user || !bcrypt.compareSync(password, user.password)) {
-        return res.status(401).send({ message: 'Invalid username or password' });
+        return res.status(401).json({ message: 'Invalid username or password' });
     }
-
-    res.send({ message: 'Login successful' });
+    accessToken = JWT.createToken(user);
+    console.log(accessToken);
+    res.json({ accessToken: accessToken });
 });
+
+//use this when we want to process the requests
+app.use( (req,res,next) => {//this a custom middleware function and has next()
+    console.log(req.url)    //logs the urls of every request
+    next()                  //pass control to the next middleware/route handler
+})
+
+app.use( (err,req,res,next) => {        // handles servers errors
+    console.log('An error Ocurred! : ' + err)        // logs the error into the console
+    res.status(500).json({message: 'server error'}) // responds with status code 500 and message 'server error'
+})
 
 app.listen(port, () => {
     console.log(`Server running at http://localhost:${port}`);
