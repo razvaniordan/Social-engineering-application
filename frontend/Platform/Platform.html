@@ -46,6 +46,26 @@
             document.execCommand("copy");
         }
 
+        function refreshToken() {
+            return fetch('/token', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify({ token: localStorage.getItem('refreshToken') })
+            })
+            .then(response => {
+                if (!response.ok) {
+                    throw new Error(`HTTTP status ${response.status}`);
+                }
+                return response.json();
+            })
+            .then(data => {
+                localStorage.setItem('accessToken', data.accessToken); // Update the stored access token
+                return data.accessToken;
+            });
+        }
+
         document.addEventListener('DOMContentLoaded', () => {
             const token = localStorage.getItem('accessToken');
             if (!token) {
@@ -56,10 +76,67 @@
             }
         });
 
+        document.getElementById('btnGenerate').addEventListener('click', () => {
+            const token = localStorage.getItem('accessToken'); // Retrieve the stored access token
+            fetch('/generate', {
+                method: 'POST',
+                headers: {
+                    'Authorization': `Bearer ${token}`, // Add the token to the request headers
+                    'Content-Type': 'application/json'
+                },
+            })
+            .then(response => {
+                if (!response.ok) {
+                    if(response.status === 401 || response.status === 403) {
+                        // Attempt to refresh the token
+                        return refreshToken().then(newToken => {
+                            // Retry the original request with the new token
+                            return fetch('/generate', {
+                                method: 'POST',
+                                headers: {
+                                    'Authorization': `Bearer ${newToken}`, // Add the new token to the request headers
+                                    'Content-Type': 'application/json'
+                                },
+                            });
+                        });
+                    }
+                    throw new Error(`HTTP status ${response.status}`);
+                }
+                return response.json();
+            })
+            // .then(data => {   // THIS CODE WAS USED IN ORDER TO CHECK THE FUNCTIONALITY OF THE TOKENS AND REFRESH TOKENS
+            //     console.log(data);
+            //     alert(data.message);
+            // })
+            .catch(error => {
+                console.error('Error:', error);
+                if (error.message.includes('401') || error.message.includes('403')) {
+                    logout(true);
+                }
+            });
+        });
 
-        function logout() {
-            localStorage.removeItem('accessToken');
-            window.location.href = '/'; // Redirect to the login page
+
+
+        function logout(failedAuth = false) {
+            const refreshToken = localStorage.getItem('refreshToken');
+            if (failedAuth) {
+                alert('Session expired, please login again.');
+            }
+            // Here we send a request to the server to remove the refresh token from the database
+            fetch('/logout', {
+                method: 'DELETE',
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify({ token: refreshToken })
+            }).then(() => {
+                localStorage.removeItem('accessToken');
+                localStorage.removeItem('refreshToken');
+                window.location.href = '/'; // Redirect to the login page
+            }).catch(error => {
+                console.error('Error invalidating refresh token:', error);
+            });
         }
 
     </script>

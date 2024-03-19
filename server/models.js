@@ -32,4 +32,23 @@ const User = sequelize.define('User', {
     }
 });
 
-module.exports = { sequelize, User };
+// set up the database connection for the refresh token
+const sequelizeToken = new Sequelize({
+  dialect: 'sqlite',
+  storage: './sqlite/refreshtokendatabase.sqlite'
+});
+
+// define the RefreshToken model
+const RefreshToken = sequelizeToken.define('RefreshToken', {
+  token: {
+    type: Sequelize.STRING,
+    allowNull: false
+  },
+  username: {
+    type: Sequelize.STRING,
+    allowNull: false
+  }
+});
+
+
+module.exports = { sequelize, User, sequelizeToken, RefreshToken};

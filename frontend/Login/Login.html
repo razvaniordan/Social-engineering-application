@@ -83,8 +83,10 @@
                   } else {
                     // Handle login success, e.g., redirect to another page
                     const accessToken = data.accessToken;
+                    const refreshToken = data.refreshToken;
                     localStorage.setItem('accessToken', accessToken);
-                    const token = localStorage.getItem('accessToken'); // Or sessionStorage
+                    localStorage.setItem('refreshToken', refreshToken);
+                    const token = localStorage.getItem('accessToken');
                     fetch('/home', {
                       headers: {
                         'Authorization': `Bearer ${token}`

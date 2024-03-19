@@ -1,8 +1,13 @@
-const { sequelize, User } = require('./models');
+const { sequelize, User, sequelizeToken, RefreshToken } = require('./models');
 
 async function initializeDatabase() {
-  await sequelize.sync({ force: true }); // Warning: using 'force: true' will drop the table if it already exists
-  await User.create({ username: 'razvan', password: 'razvan' });
+  // Initialize User database and table
+  await sequelize.sync({ force: true }); // This will drop the User table if it already exists
+  await User.create({ username: 'razvan', password: 'razvan' }); // You might want to remove or modify this line in production
+  
+  // Initialize RefreshToken database and table
+  await sequelizeToken.sync({ force: true }); // This will drop the RefreshToken table if it already exists
+  
   console.log('Database & tables created!');
 }
 
