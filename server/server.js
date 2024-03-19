@@ -9,11 +9,13 @@ const cors = require('cors');
 const JWT = require('./JWT');
 const jwt = require('jsonwebtoken');
 const { access } = require('fs');
+const cookieParser = require('cookie-parser');
 
 
 const app = express();
 const port = 3000;
 
+app.use(cookieParser());
 app.use(express.static(path.join(__dirname, '../frontend/Login')));
 app.use(express.static(path.join(__dirname, '../frontend/Platform')));
 app.use(cors());
@@ -46,7 +48,7 @@ function authenticateToken(req, res, next) {
 }
 
 app.post('/token', async (req, res) => {
-    const { token: refreshToken } = req.body;
+    const refreshToken = req.cookies.refreshToken; // Use cookie parser middleware to access cookies
     if (refreshToken == null) return res.sendStatus(401);
 
     const storedToken = await RefreshToken.findOne({ where: { token: refreshToken } });
@@ -63,8 +65,11 @@ app.post('/generate', authenticateToken, (req, res) => {  // THIS CODE IS USED O
     res.json({ message: 'Token is valid' });
 });
 
-app.delete('/logout', async (req, res) => {
-    await RefreshToken.destroy({ where: { token: req.body.token } });
+app.delete('/logout', authenticateToken, async (req, res) => {
+    if(!req.user) return res.sendStatus(401);
+
+    await RefreshToken.destroy({ where: { username: req.user.username } });
+    res.clearCookie('refreshToken'); // clear the refreshToken cookie
     res.sendStatus(204);
 });
 
@@ -81,7 +86,8 @@ app.post('/login', async (req, res) => {
     await RefreshToken.create({ token: refreshToken, username: user.username });
     console.log(accessToken);
     console.log(refreshToken);
-    res.json({ accessToken: accessToken, refreshToken: refreshToken });
+    res.cookie('refreshToken', refreshToken, { httpOnly: true, sameSite: 'strict' });
+    res.json({ accessToken: accessToken });
 });
 
 //use this when we want to process the requests

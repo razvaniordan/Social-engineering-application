@@ -119,7 +119,6 @@
 
 
         function logout(failedAuth = false) {
-            const refreshToken = localStorage.getItem('refreshToken');
             if (failedAuth) {
                 alert('Session expired, please login again.');
             }
@@ -127,12 +126,12 @@
             fetch('/logout', {
                 method: 'DELETE',
                 headers: {
+                    'Authorization': `Bearer ${localStorage.getItem('accessToken')}`,
                     'Content-Type': 'application/json'
                 },
                 body: JSON.stringify({ token: refreshToken })
             }).then(() => {
                 localStorage.removeItem('accessToken');
-                localStorage.removeItem('refreshToken');
                 window.location.href = '/'; // Redirect to the login page
             }).catch(error => {
                 console.error('Error invalidating refresh token:', error);
