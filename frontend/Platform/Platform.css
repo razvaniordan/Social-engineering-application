@@ -5,9 +5,9 @@
 @import url("https://fonts.googleapis.com/css2?family=Abel&family=Space+Grotesk:wght@300..700&family=Yanone+Kaffeesatz:wght@200..700&display=swap");
 
 
-  .wrapper { display: none;}
+ .wrapper { display: none;}
 
-  body {
+ body {
 
     justify-content: center;
     align-items: center;
@@ -17,7 +17,7 @@
     background-position: center;
 }
 
-  * {
+ * {
     margin: 0;
     padding: 0;
     box-sizing: border-box;
@@ -59,28 +59,6 @@
 
     box-shadow: 0px 5px 10px #4779bb;
   }
-
-  #generator {
-    max-width: 650px;
-    margin: auto;
-    padding: 5px;
-    margin-top: 100px;
-    margin-bottom: 20px;
-    background:none;
-    border:rgb(7, 120, 196);
-    display: flex;
-    align-items: center; /* Aligns items vertically in the center */
-    justify-content: start; /* Aligns items to the start of the container */
-  }
-
-  #btnGenerate {
-    margin-top: 50px;
-    margin-bottom: 50px;
-    border-radius: 5px;
-    flex-grow: 0; /* Prevents the button from growing */
-    margin-right: 10px; /* Adds some space between the button and the input */
-    width: 150px;
-  }
   
   .btn-primary {
     width: 100%;
@@ -93,7 +71,7 @@
     margin-bottom: 50px;
   }
 
-  #gen button.btn-secondary {
+#gen button.btn-secondary {
     background-color: #5f6e7c;
     color: white;
     border-radius: 5px;
@@ -106,15 +84,17 @@
 }
 
   
-  .btn-primary:hover {
+.btn-primary:hover {
     background-color: #0056b3;
-  }
+}
   
-  .d-grid {
+.d-grid {
+    margin-top: 150px;
     max-width: 650px;
-    margin: auto;
+    margin-left: auto;
+    margin-right: auto;
     padding: 5px;
     display: grid;
     gap: 10px;
-  }
+}
   

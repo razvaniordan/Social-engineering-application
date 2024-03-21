@@ -1,0 +1,75 @@
+@import url("https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700;800;900&display=swap");
+@import url("https://fonts.googleapis.com/css2?family=Abel&family=Space+Grotesk:wght@300..700&family=Yanone+Kaffeesatz:wght@200..700&display=swap");
+
+
+
+body {
+
+  justify-content: center;
+  align-items: center;
+  min-height: 100vh;
+  background: url('img.jpg') no-repeat;
+  background-size: cover;
+  background-position: center;
+}
+
+* {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+    font-family: "Poppins", sans-serif;
+}
+
+h1 {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-top: -5px;
+    text-align: left;
+    text-shadow: 1px 1px 3px #000000;
+    color: rgb(7, 120, 196);
+    background-color: rgb(112, 142, 189);
+    padding: 10px;
+    border-color: #911a11;
+
+    font-family: "Yanone Kaffeesatz", sans-serif;
+    font-optical-sizing: auto;
+    font-weight: 600;
+    font-size: 2.5rem;
+    font-style: normal;
+
+    box-shadow: 0px 5px 10px #4779bb;
+}
+
+#generator {
+    max-width: 650px;
+    margin: auto;
+    padding: 5px;
+    margin-top: 100px;
+    margin-bottom: 20px;
+    background:none;
+    border:rgb(7, 120, 196);
+    display: flex;
+    align-items: center; /* Aligns items vertically in the center */
+    justify-content: start; /* Aligns items to the start of the container */
+}
+
+#btnGenerate {
+    margin-top: 50px;
+    margin-bottom: 50px;
+    border-radius: 5px;
+    flex-grow: 0; /* Prevents the button from growing */
+    margin-right: 10px; /* Adds some space between the button and the input */
+    width: 150px;
+}
+
+.btn-primary {
+    width: 100%;
+    padding: 10px;
+    border: none;
+    border-radius: 5px;
+    background-color: #007bff;
+    color: white;
+    cursor: pointer;
+    margin-bottom: 50px;
+}

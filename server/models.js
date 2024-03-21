@@ -1,6 +1,24 @@
 const bcrypt = require('bcryptjs');
 const { Sequelize, DataTypes } = require('sequelize');
 
+const sequelizeEmployee = new Sequelize({
+  dialect: 'sqlite',
+  storage: './sqlite/employeedatabase.sqlite'
+});
+
+const Employee = sequelizeEmployee.define('Employee', {
+  email: {
+    type: DataTypes.STRING,
+    allowNull: false,
+    unique: true
+  },
+  token: {
+    type: DataTypes.STRING,
+    allowNull: false,
+    unique: true
+  }
+});
+
 // set up the database connection
 const sequelize = new Sequelize({
   dialect: 'sqlite',
@@ -51,4 +69,4 @@ const RefreshToken = sequelizeToken.define('RefreshToken', {
 });
 
 
-module.exports = { sequelize, User, sequelizeToken, RefreshToken};
+module.exports = { sequelize, User, sequelizeToken, RefreshToken, sequelizeEmployee, Employee};

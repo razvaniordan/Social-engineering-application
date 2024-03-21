@@ -2,7 +2,7 @@ require('dotenv').config();
 
 const express = require('express');
 const path = require('path');
-const { User, RefreshToken } = require('./models');
+const { User, RefreshToken, Employee } = require('./models');
 const bodyParser = require('body-parser');
 const bcrypt = require('bcryptjs');
 const cors = require('cors');
@@ -22,6 +22,7 @@ app.use(cors());
 app.use(bodyParser.json());
 app.use(express.static('../frontend/Login'));
 app.use(express.static('../frontend/Platform'));
+app.use(express.static('../frontend/EditEmployees'));
 
 
 // This and the app.use(express.static()) I use in order to change the path of the html and connect frontend to the backend of the login
@@ -32,6 +33,10 @@ app.get('/', (req, res) => {
 
 app.get('/home', (req, res) => {
     res.sendFile(path.join(__dirname, '../frontend/Platform/Platform.html'));
+});
+
+app.get('/edit', (req, res) => {
+    res.sendFile(path.join(__dirname, '../frontend/EditEmployees/EditEmployees.html'));
 });
 
 function authenticateToken(req, res, next) {
@@ -89,6 +94,49 @@ app.post('/login', async (req, res) => {
     res.cookie('refreshToken', refreshToken, { httpOnly: true, sameSite: 'strict' });
     res.json({ accessToken: accessToken });
 });
+
+// Endpoint to get all employees
+app.get('/employees', async (req, res) => {
+    const search = req.query.search;
+    let queryOptions = {};
+    if (search) {
+        queryOptions = {
+            where: {
+                email: {
+                    [Sequelize.Op.like]: `%${search}%`
+                }
+            }
+        };
+    }
+    const employees = await Employee.findAll(queryOptions);
+    res.json(employees);
+});
+
+// Endpoint to add an employee
+app.post('/addEmployee', async (req, res) => {
+    const { email } = req.body;
+
+    if (!email) return res.status(400).json({ message: 'Email is required' });
+
+    const token = jwt.sign({ email }, process.env.LINK_SECRET, { expiresIn: '7d' }); // Generate token
+    try {
+        await Employee.create({ email, token });
+        res.status(200).json({ message: 'Employee added' });
+    } catch (err) {
+        if (err.name === 'SequelizeUniqueConstraintError') {
+            return res.status(409).json({ message: 'An employee with this email already exists' });
+        }
+        return res.status(500).json({ message: 'An error occurred while adding the employee.' });
+    }
+});
+
+// Endpoint to remove an employee
+app.post('/removeEmployee', async (req, res) => {
+    const { email } = req.body;
+    await Employee.destroy({ where: { email } }); // Remove employee from database
+    res.status(200).send('Employee removed');
+});
+
 
 //use this when we want to process the requests
 app.use( (req,res,next) => {//this a custom middleware function and has next()

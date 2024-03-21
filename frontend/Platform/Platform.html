@@ -1,7 +1,7 @@
 <!DOCTYPE html>
 <html lang="en">
+
 <head>
-    
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Dashboard</title>
@@ -10,8 +10,9 @@
     <link href="https://fonts.googleapis.com/css2?family=Roboto:wght@400;700&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="Platform.css">
 </head>
+
 <body>
-    
+
     <div class="wrapper">
         <form action="">
             
@@ -19,31 +20,20 @@
                 Dashboard
                 <button id="btnLogout" type="button" class="btn btn-light" onclick="logout()">Log out</button>
             </h1>
-            
-            <div id="generator" class="form-control">
-                <button id="btnGenerate" type="button" class="btn btn-primary">GENERATE</button>
-                <input class="form-control" type="text" value="Press GENERATE in order to generate the link" readonly>
-                <button onclick="copyLink()" class="btn btn-secondary">Copy</button>
-
-            </div>
 
             <div class="d-grid gap-3">
+                <button class="btn btn-primary" type="button" onclick="editEmp()">Edit employees</button>
                 <button class="btn btn-primary" type="button">View statistics</button>
                 <button class="btn btn-primary" type="button">Send emails</button>
-              </div>
+            </div>
 
         </form>
     </div>
 
     <script>
-        function copyLink() {
-            const copyText = document.querySelector('.form-control[type="text"]');
-            if(copyText.value === "Press GENERATE in order to generate the link") {
-                alert("You need to generate the link first");
-                return;
-            }
-            copyText.select();
-            document.execCommand("copy");
+
+        function editEmp() {
+            window.location.href = '/edit';
         }
 
         function refreshToken() {
@@ -51,8 +41,7 @@
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json'
-                },
-                body: JSON.stringify({ token: localStorage.getItem('refreshToken') })
+                }
             })
             .then(response => {
                 if (!response.ok) {
