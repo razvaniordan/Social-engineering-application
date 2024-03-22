@@ -9,6 +9,7 @@ const cors = require('cors');
 const JWT = require('./JWT');
 const jwt = require('jsonwebtoken');
 const { access } = require('fs');
+const { Op } = require('sequelize');
 const cookieParser = require('cookie-parser');
 
 
@@ -97,20 +98,29 @@ app.post('/login', async (req, res) => {
 
 // Endpoint to get all employees
 app.get('/employees', async (req, res) => {
-    const search = req.query.search;
-    let queryOptions = {};
-    if (search) {
-        queryOptions = {
-            where: {
-                email: {
-                    [Sequelize.Op.like]: `%${search}%`
-                }
+    const search = req.query.search || '';
+    const page = parseInt(req.query.page) || 0;
+    const pageSize = parseInt(req.query.size) || 10;
+    let queryOptions = {
+        where: {
+            email: {
+                [Op.like]: `%${search}%`
             }
-        };
+        },
+        offset: page * pageSize,
+        limit: pageSize,
+    };
+
+    try {
+        const { count, rows } = await Employee.findAndCountAll(queryOptions);
+        res.json({ rows, count });
+    } catch (err) {
+        console.error('Error fetching employees:', err);
+        res.status(500).json({ message: 'An error occurred while fetching the employees.' });
     }
-    const employees = await Employee.findAll(queryOptions);
-    res.json(employees);
 });
+
+
 
 // Endpoint to add an employee
 app.post('/addEmployee', async (req, res) => {
@@ -121,7 +131,7 @@ app.post('/addEmployee', async (req, res) => {
     const token = jwt.sign({ email }, process.env.LINK_SECRET, { expiresIn: '7d' }); // Generate token
     try {
         await Employee.create({ email, token });
-        res.status(200).json({ message: 'Employee added' });
+        res.status(200).json({ message: `Employee added: ${email}`, email });
     } catch (err) {
         if (err.name === 'SequelizeUniqueConstraintError') {
             return res.status(409).json({ message: 'An employee with this email already exists' });

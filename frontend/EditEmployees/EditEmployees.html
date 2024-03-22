@@ -12,7 +12,10 @@
 <body>
     <div class="wrapper">
         <form action="">
-            <h1>Edit Employees</h1>
+            <h1>
+                Edit Employees
+                <button id="btnHome" type="button" class="btn btn-light" onclick="home()">Home</button>
+            </h1>
             <div id="searchBox" class="form-group">
                 <input type="text" id="searchEmail" class="form-control" placeholder="Search employee email">
             </div>
@@ -20,40 +23,72 @@
                 <button id="btnAdd" onclick="addEmployee()" class="btn btn-primary">Add</button>
                 <input type="email" id="newEmployeeEmail" class="form-control" placeholder="Enter new employee email">
             </div>
+            <div id="paginationControls">
+                <button onclick="changePage(-1, event)" class="btn btn-secondary">Previous</button>
+                <span id="pageIndicator"></span>
+                <button onclick="changePage(1, event)" class="btn btn-secondary">Next</button>
+            </div>
             <div id="employeeList" class="list-group mt-3"></div>
+            
+            
+            
         </form>
     </div>
 
     <script>
 
+        let currentPage = 0; // Current page index
+        let totalEmployees = 0; // Total number of employees
+        const pageSize = 10; // Employees per page
+
+        function home() {
+            window.location.href = '/home';
+        }
+        
         let globalEmployees = [];
         const listConatiner = document.getElementById('employeeList');
         const searchInput = document.getElementById('searchEmail');
 
-        function loadEmployees() {
-            const searchTerm = searchInput.value.toLowerCase();
-            const filteredEmployees = globalEmployees.filter(employee => 
-                employee.email.toLowerCase().includes(searchTerm)
-            );
-
-            listConatiner.innerHTML = ''; // Clear existing list
-            // Render filtered or all employees
-            filteredEmployees.forEach(employee => {
-                const item = document.createElement('button');
-                item.classList.add('list-group-item', 'list-group-item-action', 'd-flex', 'justify-content-between', 'align-items-center');
-                item.innerHTML = `${employee.email}
-                                  <button onclick="removeEmployee('${employee.email}')" class="btn btn-danger btn-sm">Remove</button>`;
-                listConatiner.appendChild(item);
-            });   
+        function fetchEmployees() {
+            const searchTerm = searchInput.value;
+            fetch(`/employees?page=${currentPage}&size=${pageSize}&search=${encodeURIComponent(searchTerm)}`)
+                .then(response => response.json())
+                .then(data => {
+                    globalEmployees = data.rows;
+                    totalEmployees = data.count;
+                    updatePageIndicator(totalEmployees, currentPage, pageSize);
+                    loadEmployees(globalEmployees);
+                }).catch(error => console.error('Error fetching employees:', error));
         }
 
-        function fetchEmployees() {
-            fetch('/employees')
-                .then(response => response.json())
-                .then(employees => {
-                    globalEmployees = employees; // Store the employees in a global variable
-                    loadEmployees(); // Load and render the employees
-                }).catch(error => console.error('Error fetching employees:', error));
+        function loadEmployees(employees) { 
+            const listContainer = document.getElementById('employeeList');
+            listContainer.innerHTML = '';
+            console.log(employees);
+            if (Array.isArray(employees)) {
+                employees.forEach(employee => {
+                    const item = document.createElement('div');
+                    item.classList.add('list-group-item', 'list-group-item-action', 'd-flex', 'justify-content-between', 'align-items-center');
+                    item.innerHTML = `${employee.email}
+                                    <button onclick="removeEmployee('${employee.email}')" class="btn btn-danger btn-sm">Remove</button>`;
+                    listContainer.appendChild(item);
+                });
+            } else {
+                console.error('Expected an array of employees, received:', employees);
+            }
+        }
+
+        function changePage(direction) {
+            event.preventDefault();
+            const newPage = currentPage + direction;
+            // Check new page is within range
+            if (newPage < 0 || newPage * pageSize >= totalEmployees) return;
+            currentPage = newPage;
+            fetchEmployees();
+        }
+
+        function updatePageIndicator(total, currentPage, pageSize) {
+            document.getElementById('pageIndicator').textContent = `Page ${currentPage + 1} of ${Math.ceil(total / pageSize)}`;
         }
 
         let debounceTimeout;
@@ -62,11 +97,13 @@
         function debouncedLoadEmployees() {
             clearTimeout(debounceTimeout);
             debounceTimeout = setTimeout(() => {
+                currentPage = 0; // Reset to first page when searching
                 fetchEmployees();
             }, debounceDelay);
         }
 
         document.getElementById('searchEmail').addEventListener('input', debouncedLoadEmployees);
+        document.addEventListener('DOMContentLoaded', fetchEmployees);
 
         document.addEventListener('DOMContentLoaded', () => {
             const token = localStorage.getItem('accessToken');
@@ -81,23 +118,32 @@
 
         function addEmployee() {
             const email = document.getElementById('newEmployeeEmail').value;
-            fetch('/addEmployee', {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json',
-                },
-                body: JSON.stringify({ email }),
-            })
-            .then(response => response.json())
-            .then(response => {
-                if (response.message) {
-                    alert(response.message);
-                    document.getElementById('newEmployeeEmail').value = '';
-                    fetchEmployees(); // Refresh the employee list
-                }
-            })
-            .catch(error => console.error('Error:', error));
+            const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/; // Email validation regex - forces the user to add the format of email address
+            //const emailRegex = /^[^\s@]+@gmail\.com$/; -> if we want to restrict the email to only gmail
+            if(emailRegex.test(email)){
+                fetch('/addEmployee', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify({ email }),
+                })
+                .then(response => response.json())
+                .then(data => {
+                    if (data.message) {
+                        alert(data.message);
+                        if (data.message.includes('Employee added')) {
+                            document.getElementById('newEmployeeEmail').value = '';
+                            fetchEmployees(); // Refresh the employee list
+                        }
+                    }
+                })
+                .catch(error => console.error('Error:', error));
+            } else {
+               alert('Please enter a valid email address!');
+            }
         }
+
 
         function removeEmployee(email) {
             fetch('/removeEmployee', {
@@ -110,8 +156,6 @@
                 loadEmployees(); // Reload the list
             });
         }
-
-        document.addEventListener('DOMContentLoaded', loadEmployees);
     </script>
 </body>
 </html>

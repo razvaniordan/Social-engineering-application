@@ -17,7 +17,9 @@ body {
     background-position: center;
 }
 
+
 .wrapper {
+    display: none;
     width: 420px;
     color: #ffffff;
 }

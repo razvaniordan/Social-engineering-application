@@ -54,6 +54,15 @@
           }
         }
 
+        document.addEventListener('DOMContentLoaded', () => {
+            const token = localStorage.getItem('accessToken');
+            if (token) {
+                window.location.href = '/home'; // Redirect to login if no token
+            } else {
+                document.querySelector('.wrapper').style.display = 'block'; 
+            }
+        });
+
         // This is the login function in order to check the user from database
         document.addEventListener('DOMContentLoaded', function() {
               const loginForm = document.querySelector('form');
