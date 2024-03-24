@@ -16,18 +16,24 @@
                 Edit Employees
                 <button id="btnHome" type="button" class="btn btn-light" onclick="home()">Home</button>
             </h1>
+
             <div id="searchBox" class="form-group">
                 <input type="text" id="searchEmail" class="form-control" placeholder="Search employee email">
             </div>
+
             <div id ="addEmp" class="form-control">
                 <button id="btnAdd" onclick="addEmployee()" class="btn btn-primary">Add</button>
                 <input type="email" id="newEmployeeEmail" class="form-control" placeholder="Enter new employee email">
             </div>
+
+            <div id="messageDisplay" class="alert" style="display: none;"></div>
+
             <div id="paginationControls">
                 <button onclick="changePage(-1, event)" class="btn btn-secondary">Previous</button>
                 <span id="pageIndicator"></span>
                 <button onclick="changePage(1, event)" class="btn btn-secondary">Next</button>
             </div>
+
             <div id="employeeList" class="list-group mt-3"></div>
             
             
@@ -36,6 +42,33 @@
     </div>
 
     <script>
+
+        function refreshToken() {
+            return fetch('/token', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json'
+                }
+            })
+            .then(response => {
+                if (!response.ok) {
+                    throw new Error(`HTTTP status ${response.status}`);
+                }
+                return response.json();
+            })
+            .then(data => {
+                if (data.accessToken) {
+                    localStorage.setItem('accessToken', data.accessToken); // Update the stored access token
+                    return data.accessToken;
+                } else {
+                    throw new Error('Missing access token');
+                }
+            })
+            .catch(error => {
+                localStorage.removeItem('accessToken'); // Clear invalid or expired tokens
+                throw error; // Rethrow the error for the next catch block
+            });
+        }
 
         let currentPage = 0; // Current page index
         let totalEmployees = 0; // Total number of employees
@@ -49,13 +82,45 @@
         const listConatiner = document.getElementById('employeeList');
         const searchInput = document.getElementById('searchEmail');
 
+        function handleResponse(response) {
+            if (response.ok) return response.json();
+            if (response.status === 401) {
+                // Unauthorized, attempt to refresh the token
+                return refreshToken().then(() => {
+                    // After refresh, retry the original request
+                    return fetch(response.url, {
+                        headers: {
+                            'Authorization': `Bearer ${localStorage.getItem('accessToken')}`
+                        }
+                    }).then(res => {
+                        if (res.ok) return res.json();
+                        throw new Error('Failed to fetch after token refresh');
+                    });
+                });
+            }
+            throw new Error('Network response was not ok.');
+        }
+
         function fetchEmployees() {
-            const searchTerm = searchInput.value;
-            fetch(`/employees?page=${currentPage}&size=${pageSize}&search=${encodeURIComponent(searchTerm)}`)
-                .then(response => response.json())
+            const fetchOptions = {
+                headers: {
+                    'Authorization': `Bearer ${localStorage.getItem('accessToken')}`
+                }
+            };
+
+            fetch(`/employees?page=${currentPage}&size=${pageSize}&search=${encodeURIComponent(searchInput.value)}`)
+                .then(handleResponse) // This will check for 401 status and attempt to refresh the token.
+                //.then(response => response.json())
                 .then(data => {
                     globalEmployees = data.rows;
                     totalEmployees = data.count;
+                    // Check if the current page is beyond the new total pages and adjust accordingly
+                    const totalPageCount = Math.ceil(totalEmployees / pageSize);
+                    if (currentPage >= totalPageCount) {
+                        currentPage = Math.max(0, totalPageCount - 1); // Adjust to the last page if current page exceeds total pages
+                        fetchEmployees(); // Refetch employees for the new current page
+                        return; // Prevent further execution in this call
+                    }
                     updatePageIndicator(totalEmployees, currentPage, pageSize);
                     loadEmployees(globalEmployees);
                 }).catch(error => console.error('Error fetching employees:', error));
@@ -106,55 +171,124 @@
         document.addEventListener('DOMContentLoaded', fetchEmployees);
 
         document.addEventListener('DOMContentLoaded', () => {
-            const token = localStorage.getItem('accessToken');
-            if (!token) {
-                alert('You need to login first');
-                window.location.href = '/'; // Redirect to login if no token
-            } else {
-                document.querySelector('.wrapper').style.display = 'block'; 
-            }
-            fetchEmployees();
+
+            refreshToken().then(() => {
+                // After successfully refreshing the token, display the content and load data:
+                document.querySelector('.wrapper').style.display = 'block';
+                fetchEmployees();
+            }).catch(() => {
+                // If the token refresh fails, redirect to the login page:
+                alert('Session expired, please login again.');
+                localStorage.removeItem('accessToken');
+                window.location.href = '/';
+            });
+
+            // const token = localStorage.getItem('accessToken');
+            // if (!token) {
+            //     alert('You need to login first');
+            //     window.location.href = '/'; // Redirect to login if no token
+            // } else {
+            //     document.querySelector('.wrapper').style.display = 'block'; 
+            // }
+            // fetchEmployees();
         });
 
+        function showMessage(message, type) {
+            const messageDisplay = document.getElementById('messageDisplay');
+            messageDisplay.textContent = message; // Set the text of the message display area
+            messageDisplay.style.display = 'block'; // Make the message display area visible
+            messageDisplay.className = `alert alert-${type}`;
+        }
+
         function addEmployee() {
+            event.preventDefault();
             const email = document.getElementById('newEmployeeEmail').value;
             const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/; // Email validation regex - forces the user to add the format of email address
             //const emailRegex = /^[^\s@]+@gmail\.com$/; -> if we want to restrict the email to only gmail
-            if(emailRegex.test(email)){
+            if(!emailRegex.test(email)){
+                showMessage('Please enter a valid email address!', 'danger');
+                return;
+            }
+
+            const sendAddEmployeeRequest = (token) => {
                 fetch('/addEmployee', {
                     method: 'POST',
                     headers: {
                         'Content-Type': 'application/json',
+                        'Authorization': `Bearer ${token}`
                     },
                     body: JSON.stringify({ email }),
                 })
-                .then(response => response.json())
-                .then(data => {
-                    if (data.message) {
-                        alert(data.message);
-                        if (data.message.includes('Employee added')) {
-                            document.getElementById('newEmployeeEmail').value = '';
-                            fetchEmployees(); // Refresh the employee list
-                        }
+                .then(response => {
+                    if (response.ok) {
+                        return response.json();
+                    } else if (response.status === 401 || response.status === 403) { // Unauthorized, so try to refresh the token
+                        throw new Error('Token expired or invalid');
+                    } else if (response.status === 409) {
+                        return response.json();
                     }
                 })
-                .catch(error => console.error('Error:', error));
-            } else {
-               alert('Please enter a valid email address!');
-            }
+                .then(data => {
+                    showMessage(data.message, 'danger');
+                    if (data.message.includes('Employee added')) {
+                        messageDisplay.className = 'alert alert-info';
+                        document.getElementById('newEmployeeEmail').value = '';
+                        fetchEmployees(); // Refresh the employee list
+                    }
+                })
+                .catch(error => {
+                    if (error.message === 'Token expired or invalid') {
+                        refreshToken().then(newToken => {
+                            sendAddEmployeeRequest(newToken); // Retry with new token
+                        }).catch(error => {
+                            showMessage('Failed to refresh token. Please log in again.', 'danger');
+                        });
+                    } else {
+                        showMessage('Error: ' + error, 'danger');
+                    }
+                });
+            };
+
+            sendAddEmployeeRequest(localStorage.getItem('accessToken'));
         }
 
 
         function removeEmployee(email) {
-            fetch('/removeEmployee', {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json',
-                },
-                body: JSON.stringify({ email }),
-            }).then(() => {
-                loadEmployees(); // Reload the list
-            });
+            event.preventDefault();
+            const attemptRemoveEmployee = (token) => {
+                fetch('/removeEmployee', {
+                    method: 'DELETE',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Authorization': `Bearer ${token}`
+                    },
+                    body: JSON.stringify({ email }),
+                })
+                .then(response => {
+                    if(!response.ok) {
+                        if(response.status === 401 || response.status === 403) {
+                            return refreshToken().then(newToken => {
+                                localStorage.setItem('accessToken', newToken); // Update the stored access token
+                                return attemptRemoveEmployee(newToken); // Retry with new token
+                            });
+                        }
+                        throw new Error(`HTTP status ${response.status}`);
+                    }
+                    return response.json();
+                })
+                .then(data => {
+                    showMessage(data.message, 'info'); // Show succes or failure message
+                    fetchEmployees(); // Reload the list
+                })
+                .catch(error => {
+                    console.error('Error:', error);
+                    showMessage('Error: ' + error, 'danger'); // Display any errors
+                });
+            };
+
+            // Start the process with the current token
+            attemptRemoveEmployee(localStorage.getItem('accessToken'));
+
         }
     </script>
 </body>

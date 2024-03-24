@@ -123,7 +123,7 @@ app.get('/employees', async (req, res) => {
 
 
 // Endpoint to add an employee
-app.post('/addEmployee', async (req, res) => {
+app.post('/addEmployee', authenticateToken, async (req, res) => {
     const { email } = req.body;
 
     if (!email) return res.status(400).json({ message: 'Email is required' });
@@ -141,10 +141,18 @@ app.post('/addEmployee', async (req, res) => {
 });
 
 // Endpoint to remove an employee
-app.post('/removeEmployee', async (req, res) => {
+app.delete('/removeEmployee', authenticateToken, async (req, res) => {
     const { email } = req.body;
-    await Employee.destroy({ where: { email } }); // Remove employee from database
-    res.status(200).send('Employee removed');
+    try {
+        const result = await Employee.destroy({ where: { email } });
+        if (result > 0) {
+            res.status(200).json({ message: `Employee removed: ${email}`, email });
+        } else {
+            res.status(404).json({ message: 'Employee not found' });
+        }
+    } catch (err) {
+        res.status(500).json({ message: 'An error occurred while removing the employee.' });
+    }
 });
 
 

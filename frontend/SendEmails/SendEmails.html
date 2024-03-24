@@ -36,6 +36,46 @@
             copyText.select();
             document.execCommand("copy");
         }
+
+        document.getElementById('btnGenerate').addEventListener('click', () => {
+            const token = localStorage.getItem('accessToken'); // Retrieve the stored access token
+            fetch('/generate', {
+                method: 'POST',
+                headers: {
+                    'Authorization': `Bearer ${token}`, // Add the token to the request headers
+                    'Content-Type': 'application/json'
+                },
+            })
+            .then(response => {
+                if (!response.ok) {
+                    if(response.status === 401 || response.status === 403) {
+                        // Attempt to refresh the token
+                        return refreshToken().then(newToken => {
+                            // Retry the original request with the new token
+                            return fetch('/generate', {
+                                method: 'POST',
+                                headers: {
+                                    'Authorization': `Bearer ${newToken}`, // Add the new token to the request headers
+                                    'Content-Type': 'application/json'
+                                },
+                            });
+                        });
+                    }
+                    throw new Error(`HTTP status ${response.status}`);
+                }
+                return response.json();
+            })
+            // .then(data => {   // THIS CODE WAS USED IN ORDER TO CHECK THE FUNCTIONALITY OF THE TOKENS AND REFRESH TOKENS
+            //     console.log(data);
+            //     alert(data.message);
+            // })
+            .catch(error => {
+                console.error('Error:', error);
+                if (error.message.includes('401') || error.message.includes('403')) {
+                    logout(true);
+                }
+            });
+        });
     </script>
 </body>
 </html>
