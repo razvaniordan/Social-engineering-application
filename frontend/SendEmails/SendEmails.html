@@ -16,6 +16,7 @@
             
             <h1>
                 Send emails
+                <button id="btnHome" type="button" class="btn btn-light" onclick="home()">Home</button>
             </h1>
 
             <div id="generator" class="form-control">
@@ -27,6 +28,22 @@
     </div>
 
     <script>
+
+        document.addEventListener('DOMContentLoaded', () => {
+
+            refreshToken().then(() => {
+                // After successfully refreshing the token, display the content and load data:
+                document.querySelector('.wrapper').style.display = 'block';
+            }).catch(() => {
+                // If the token refresh fails, redirect to the login page:
+                logout(true);
+            });
+        });        
+
+        function home() {
+           window.location.href = '/home';
+        }
+
         function copyLink() {
             const copyText = document.querySelector('.form-control[type="text"]');
             if(copyText.value === "Press GENERATE in order to generate the link") {
@@ -35,6 +52,25 @@
             }
             copyText.select();
             document.execCommand("copy");
+        }
+
+        function refreshToken() {
+            return fetch('/token', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json'
+                }
+            })
+            .then(response => {
+                if (!response.ok) {
+                    throw new Error(`HTTTP status ${response.status}`);
+                }
+                return response.json();
+            })
+            .then(data => {
+                localStorage.setItem('accessToken', data.accessToken); // Update the stored access token
+                return data.accessToken;
+            });
         }
 
         document.getElementById('btnGenerate').addEventListener('click', () => {
@@ -49,6 +85,7 @@
             .then(response => {
                 if (!response.ok) {
                     if(response.status === 401 || response.status === 403) {
+                        console.log('Token expired. Attempting to refresh token...');
                         // Attempt to refresh the token
                         return refreshToken().then(newToken => {
                             // Retry the original request with the new token
@@ -58,7 +95,9 @@
                                     'Authorization': `Bearer ${newToken}`, // Add the new token to the request headers
                                     'Content-Type': 'application/json'
                                 },
-                            });
+                            })
+                            .then( () => {console.log('Token refreshed successfully');
+                        });
                         });
                     }
                     throw new Error(`HTTP status ${response.status}`);
@@ -76,6 +115,27 @@
                 }
             });
         });
+
+        function logout(failedAuth = false) {
+            if (failedAuth) {
+                alert('Session expired, please login again.');
+            }
+            // Here we send a request to the server to remove the refresh token from the database
+            fetch('/logout', {
+                method: 'DELETE',
+                headers: {
+                    'Authorization': `Bearer ${localStorage.getItem('accessToken')}`,
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify({ token: refreshToken })
+            }).then(() => {
+                localStorage.removeItem('accessToken');
+                window.location.href = '/'; // Redirect to the login page
+            }).catch(error => {
+                console.error('Error invalidating refresh token:', error);
+            });
+        }
+        
     </script>
 </body>
 </html>

@@ -22,9 +22,9 @@
             </h1>
 
             <div class="d-grid gap-3">
-                <button class="btn btn-primary" type="button" onclick="editEmp()">Edit employees</button>
+                <button class="btn btn-primary" type="button" onclick="editEmp()">Employees</button>
                 <button class="btn btn-primary" type="button">View statistics</button>
-                <button class="btn btn-primary" type="button">Send emails</button>
+                <button class="btn btn-primary" type="button" onclick="sendEmails()">Send emails</button>
             </div>
 
         </form>
@@ -34,6 +34,10 @@
 
         function editEmp() {
             window.location.href = '/edit';
+        }
+
+        function sendEmails() {
+            window.location.href = '/send';
         }
 
         function refreshToken() {
@@ -50,19 +54,28 @@
                 return response.json();
             })
             .then(data => {
-                localStorage.setItem('accessToken', data.accessToken); // Update the stored access token
-                return data.accessToken;
+                if (data.accessToken) {
+                    localStorage.setItem('accessToken', data.accessToken); // Update the stored access token
+                    return data.accessToken;
+                } else {
+                    throw new Error('Missing access token');
+                }
+            })
+            .catch(error => {
+                localStorage.removeItem('accessToken'); // Clear invalid or expired tokens
+                throw error; // Rethrow the error for the next catch block
             });
         }
 
         document.addEventListener('DOMContentLoaded', () => {
-            const token = localStorage.getItem('accessToken');
-            if (!token) {
-                alert('You need to login first');
-                window.location.href = '/'; // Redirect to login if no token
-            } else {
-                document.querySelector('.wrapper').style.display = 'block'; 
-            }
+
+            refreshToken().then(() => {
+                // After successfully refreshing the token, display the content and load data:
+                document.querySelector('.wrapper').style.display = 'block';
+            }).catch(() => {
+                // If the token refresh fails, logout and redirect to the login page:
+                logout(true);
+            });
         });
 
         function logout(failedAuth = false) {

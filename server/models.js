@@ -68,5 +68,26 @@ const RefreshToken = sequelizeToken.define('RefreshToken', {
   }
 });
 
+const ClickLog = sequelizeEmployee.define('ClickLog', {
+  uniqueUrl: {
+      type: DataTypes.STRING,
+      allowNull: false
+  },
+  clickedAt: {
+      type: DataTypes.DATE,
+      allowNull: false,
+      defaultValue: DataTypes.NOW // Automatically set to the current time
+  },
+  ipAddress: {
+      type: DataTypes.STRING,
+      allowNull: true // IP address might not always be available
+  },
+  referrer: {
+      type: DataTypes.STRING,
+      allowNull: true // Referrer might not always be available
+  }
+});
 
-module.exports = { sequelize, User, sequelizeToken, RefreshToken, sequelizeEmployee, Employee};
+
+
+module.exports = { sequelize, User, sequelizeToken, RefreshToken, sequelizeEmployee, Employee, ClickLog};

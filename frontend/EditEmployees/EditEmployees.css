@@ -45,8 +45,6 @@ h1 {
     max-width: 650px;
     margin: auto;
     padding: 5px;
-    margin-top: 50px;
-    margin-bottom: 20px;
     background:none;
     border:rgb(7, 120, 196);
     display: flex;
@@ -84,4 +82,44 @@ h1 {
     padding: 10px;
     background-color: #f4f4f4;
     border-radius: 5px;
+}
+
+.button-group {
+    display: flex;
+    justify-content: end;
+    gap: 10px;
+}
+
+#generator {
+    max-width: 650px;
+    margin: auto;
+    padding: 5px;
+    background:none;
+    border:rgb(7, 120, 196);
+    display: flex;
+    align-items: center; /* Aligns items vertically in the center */
+    justify-content: start; /* Aligns items to the start of the container */
+}
+
+#searchBox {
+    margin-bottom: 10px;
+    max-width: 650px;
+}
+
+#searchAndGenerate {
+    display: flex;
+    justify-content: space-between; /* Add space between the search field and generator */
+    align-items: center; /* Align items vertically */
+    gap: 20px; /* Add space between items */
+}
+
+#searchEmail, #generator {
+    flex-grow: 1; /* Make both items take up equal space */
+    margin-right: 10px; /* Add some margin to the right of the search field if needed */
+}
+
+#generator {
+    display: flex;
+    justify-content: space-between; /* This will space out the text input and button within the generator */
+    align-items: center; /* Align items vertically */
 }

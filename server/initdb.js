@@ -1,4 +1,4 @@
-const { sequelize, User, sequelizeToken, RefreshToken, sequelizeEmployee, Employee } = require('./models');
+const { sequelize, User, sequelizeToken, RefreshToken, sequelizeEmployee, Employee, sequelizeClickLog, ClickLog } = require('./models');
 
 async function initializeDatabase() {
   // Initialize User database and table

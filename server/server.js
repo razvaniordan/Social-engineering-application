@@ -2,7 +2,7 @@ require('dotenv').config();
 
 const express = require('express');
 const path = require('path');
-const { User, RefreshToken, Employee } = require('./models');
+const { User, RefreshToken, Employee, ClickLog } = require('./models');
 const bodyParser = require('body-parser');
 const bcrypt = require('bcryptjs');
 const cors = require('cors');
@@ -11,7 +11,7 @@ const jwt = require('jsonwebtoken');
 const { access } = require('fs');
 const { Op } = require('sequelize');
 const cookieParser = require('cookie-parser');
-
+const crypto = require('crypto');
 
 const app = express();
 const port = 3000;
@@ -19,12 +19,14 @@ const port = 3000;
 app.use(cookieParser());
 app.use(express.static(path.join(__dirname, '../frontend/Login')));
 app.use(express.static(path.join(__dirname, '../frontend/Platform')));
+app.use(express.static(path.join(__dirname, '../frontend/EditEmployees')));
+app.use(express.static(path.join(__dirname, '../frontend/SendEmails')));
 app.use(cors());
 app.use(bodyParser.json());
 app.use(express.static('../frontend/Login'));
 app.use(express.static('../frontend/Platform'));
 app.use(express.static('../frontend/EditEmployees'));
-
+app.use(express.static('../frontend/SendEmails'));
 
 // This and the app.use(express.static()) I use in order to change the path of the html and connect frontend to the backend of the login
 // and the app would run on localhost:3000 
@@ -40,6 +42,11 @@ app.get('/edit', (req, res) => {
     res.sendFile(path.join(__dirname, '../frontend/EditEmployees/EditEmployees.html'));
 });
 
+app.get('/send', (req, res) => {
+    res.sendFile(path.join(__dirname, '../frontend/SendEmails/SendEmails.html'));
+});
+
+// This endpoint is used to verify the token before making some specific requests
 function authenticateToken(req, res, next) {
     const authHeader = req.headers['authorization'];
     //console.log(authHeader);
@@ -53,6 +60,7 @@ function authenticateToken(req, res, next) {
     });
 }
 
+// This endpoint checks if the refresh token is valid and if it is, it generates a new access token
 app.post('/token', async (req, res) => {
     const refreshToken = req.cookies.refreshToken; // Use cookie parser middleware to access cookies
     if (refreshToken == null) return res.sendStatus(401);
@@ -120,7 +128,23 @@ app.get('/employees', async (req, res) => {
     }
 });
 
-
+app.get('/:uniqueUrl', async (req, res) => {
+    const { uniqueUrl } = req.params;
+    
+    // Store the click information in the database
+    try {
+        await ClickLog.create({
+            uniqueUrl: uniqueUrl,
+            ipAddress: req.ip, // Express's req.ip captures the requester's IP address
+            referrer: req.get('Referrer') // The page from which the link was clicked
+        });
+        // After storing the click, redirect the user
+        res.redirect('https://www.google.com');
+    } catch (err) {
+        console.error('Error logging click:', err);
+        res.redirect('https://www.google.com'); // even if the logging fails, redirect the user
+    }
+});
 
 // Endpoint to add an employee
 app.post('/addEmployee', authenticateToken, async (req, res) => {
@@ -128,10 +152,11 @@ app.post('/addEmployee', authenticateToken, async (req, res) => {
 
     if (!email) return res.status(400).json({ message: 'Email is required' });
 
-    const token = jwt.sign({ email }, process.env.LINK_SECRET, { expiresIn: '7d' }); // Generate token
+    const token = crypto.createHash('sha256').update(email).digest('hex').substring(0, 8); // Generate token
+
     try {
         await Employee.create({ email, token });
-        res.status(200).json({ message: `Employee added: ${email}`, email });
+        res.status(200).json({ message: `Employee added: ${email}`, token });
     } catch (err) {
         if (err.name === 'SequelizeUniqueConstraintError') {
             return res.status(409).json({ message: 'An employee with this email already exists' });
@@ -154,7 +179,6 @@ app.delete('/removeEmployee', authenticateToken, async (req, res) => {
         res.status(500).json({ message: 'An error occurred while removing the employee.' });
     }
 });
-
 
 //use this when we want to process the requests
 app.use( (req,res,next) => {//this a custom middleware function and has next()
