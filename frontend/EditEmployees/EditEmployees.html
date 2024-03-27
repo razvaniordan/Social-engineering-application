@@ -175,7 +175,7 @@
                 employees.forEach(employee => {
                     const item = document.createElement('div');
                     item.classList.add('list-group-item', 'list-group-item-action', 'd-flex', 'justify-content-between', 'align-items-center');
-                    const uniqueLink = `http://localhost:3000/${employee.token}`; 
+                    const uniqueLink = `http://localhost:4000/${employee.token}`;
                     item.innerHTML = `${employee.email}
                                 <div class = "button-group">
                                     <button onclick="displayLink('${uniqueLink}')" class="btn btn-success btn-sm">Generate link</button>
