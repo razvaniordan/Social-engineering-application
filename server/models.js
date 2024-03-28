@@ -7,6 +7,14 @@ const sequelizeEmployee = new Sequelize({
 });
 
 const Employee = sequelizeEmployee.define('Employee', {
+  firstName: {
+    type: DataTypes.STRING,
+    allowNull: false
+  },
+  lastName: {
+    type: DataTypes.STRING,
+    allowNull: false
+  },
   email: {
     type: DataTypes.STRING,
     allowNull: false,

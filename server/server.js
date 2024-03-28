@@ -60,6 +60,11 @@ function authenticateToken(req, res, next) {
     });
 }
 
+app.get('/validateToken', authenticateToken, (req, res) => {
+    res.json({ message: 'Token is valid' });
+});
+
+
 // This endpoint checks if the refresh token is valid and if it is, it generates a new access token
 app.post('/token', async (req, res) => {
     const refreshToken = req.cookies.refreshToken; // Use cookie parser middleware to access cookies
@@ -73,10 +78,6 @@ app.post('/token', async (req, res) => {
         const accessToken = JWT.createToken(user);
         res.json({ accessToken: accessToken });
     });
-});
-
-app.post('/generate', authenticateToken, (req, res) => {  // THIS CODE IS USED ONLY TO CHECK THE FUNCTIONALITY OF THE TOKENS AND REFRESH TOKENS
-    res.json({ message: 'Token is valid' });
 });
 
 app.delete('/logout', authenticateToken, async (req, res) => {
@@ -111,9 +112,14 @@ app.get('/employees', async (req, res) => {
     const pageSize = parseInt(req.query.size) || 10;
     let queryOptions = {
         where: {
-            email: {
-                [Op.like]: `%${search}%`
-            }
+            [Op.or]: [
+                { firstName: { [Op.like]: `%${search}%` } },
+                { lastName: { [Op.like]: `%${search}%` } },
+                { email: { [Op.like]: `%${search}%` } }
+            ]
+            // email: {
+            //     [Op.like]: `%${search}%`
+            // }
         },
         offset: page * pageSize,
         limit: pageSize,
@@ -130,14 +136,16 @@ app.get('/employees', async (req, res) => {
 
 // Endpoint to add an employee
 app.post('/addEmployee', authenticateToken, async (req, res) => {
-    const { email } = req.body;
+    const { firstName, lastName, email } = req.body;
 
-    if (!email) return res.status(400).json({ message: 'Email is required' });
+    if (!firstName || !lastName || !email) {
+        return res.status(400).json({ message: 'First name, last name, and email are required' });
+    }
 
     const token = crypto.createHash('sha256').update(email).digest('hex').substring(0, 8); // Generate token
 
     try {
-        await Employee.create({ email, token });
+        await Employee.create({ firstName, lastName, email, token });
         res.status(200).json({ message: `Employee added: ${email}`, token });
     } catch (err) {
         if (err.name === 'SequelizeUniqueConstraintError') {

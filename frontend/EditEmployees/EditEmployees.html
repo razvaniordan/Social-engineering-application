@@ -20,14 +20,25 @@
             
 
             <div id ="addEmp" class="form-control">
+                <div id="firstName" class="form-group d-flex"> <!-- d-flex is a bootstrap class that makes the div a flexbox container -->
+                    <label for="newEmployeeFirstName" class="form-label">First name</label>
+                    <input type="text" id="newEmployeeFirstName" class="form-control" placeholder="Enter new employee first name">
+                </div>
+                <div id="lastName" class="form-group d-flex">
+                    <label for="newEmployeeLastName" class="form-label">Last name</label>
+                    <input type="text" id="newEmployeeLastName" class="form-control" placeholder="Enter new employee last name">
+                </div>
+                <div id="email" class="form-group d-flex">
+                    <label for="newEmployeeEmail" class="form-label">Email address</label>
+                    <input type="email" id="newEmployeeEmail" class="form-control" placeholder="Enter new employee email">
+                </div>
                 <button id="btnAdd" onclick="addEmployee()" class="btn btn-primary">Add</button>
-                <input type="email" id="newEmployeeEmail" class="form-control" placeholder="Enter new employee email">
             </div>
 
             <div id="messageDisplay" class="alert" style="display: none;"></div>
 
             <div id="searchAndGenerate" class="form-group d-flex">
-                <input type="text" id="searchEmail" class="form-control" placeholder="Search employee email">
+                <input type="text" id="searchEmail" class="form-control" placeholder="Search employee">
                 <div id="generator" class="form-control d-flex">
                     <input class="form-control" type="text" value="Press GENERATE in order to generate the link" readonly>
                     <button onclick="copyLink()" class="btn btn-secondary">Copy</button>
@@ -176,7 +187,7 @@
                     const item = document.createElement('div');
                     item.classList.add('list-group-item', 'list-group-item-action', 'd-flex', 'justify-content-between', 'align-items-center');
                     const uniqueLink = `http://localhost:4000/${employee.token}`;
-                    item.innerHTML = `${employee.email}
+                    item.innerHTML = `${employee.firstName} ${employee.lastName} (${employee.email})
                                 <div class = "button-group">
                                     <button onclick="displayLink('${uniqueLink}')" class="btn btn-success btn-sm">Generate link</button>
                                     <button onclick="removeEmployee('${employee.email}')" class="btn btn-danger btn-sm">Remove</button>
@@ -188,11 +199,38 @@
             }
         }
 
-        function displayLink(uniqueLink) {
-            event.preventDefault();
-            const linkInput = document.querySelector('#generator .form-control[type="text"]');
-            linkInput.value = uniqueLink;
+        function displayLink(uniqueLink, isRetry = false) {
+            if (!isRetry) event.preventDefault();
+
+            fetch('/validateToken', {
+                headers: {
+                    'Authorization': `Bearer ${localStorage.getItem('accessToken')}`
+                }
+            })
+            .then(response => {
+                if (response.ok) {
+                    // The token is valid, proceed with displaying the link
+                    const linkInput = document.querySelector('#generator .form-control[type="text"]');
+                    linkInput.value = uniqueLink;
+                } else if (response.status === 401 || response.status === 403) {
+                    // Token might be expired or invalid, try to refresh it
+                    console.log('Token expired. Attempting to refresh token...');
+                    return refreshToken().then(newToken => {
+                        // Retry the operation with the new token
+                        displayLink(uniqueLink, true); // by that "true" we are telling the function that it is a retry to avoid using the event.preventDefault() again
+                        console.log('Token refreshed successfully.');
+                    });
+                } else {
+                    throw new Error('An error occurred.');
+                }
+            })
+            .catch(error => {
+                console.error('Error validating or refreshing the token:', error);
+                logout(true);
+            });
         }
+
+
 
         function changePage(direction) {
             event.preventDefault();
@@ -262,6 +300,8 @@
 
         function addEmployee() {
             event.preventDefault();
+            const firstName = document.getElementById('newEmployeeFirstName').value;
+            const lastName = document.getElementById('newEmployeeLastName').value;
             const email = document.getElementById('newEmployeeEmail').value;
             const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/; // Email validation regex - forces the user to add the format of email address
             //const emailRegex = /^[^\s@]+@gmail\.com$/; -> if we want to restrict the email to only gmail
@@ -277,13 +317,16 @@
                         'Content-Type': 'application/json',
                         'Authorization': `Bearer ${token}`
                     },
-                    body: JSON.stringify({ email }),
+                    body: JSON.stringify({ firstName, lastName, email }),
                 })
                 .then(response => {
                     if (response.ok) {
                         return response.json();
                     } else if (response.status === 401 || response.status === 403) { // Unauthorized, so try to refresh the token
+                        console.log('Token expired. Attempting to refresh token...');
                         throw new Error('Token expired or invalid'); // if we get this error
+                    } else if (response.status === 400) {
+                        throw new Error('First name, last name and email are required');
                     } else if (response.status === 409) {
                         return response.json();
                     }
@@ -293,6 +336,8 @@
                     if (data.message.includes('Employee added')) {
                         messageDisplay.className = 'alert alert-info';
                         document.getElementById('newEmployeeEmail').value = '';
+                        document.getElementById('newEmployeeFirstName').value = '';
+                        document.getElementById('newEmployeeLastName').value = '';
                         fetchEmployees(); // Refresh the employee list
                     }
                 })
@@ -300,11 +345,12 @@
                     if (error.message === 'Token expired or invalid') { // we will begin this part of code and refresh the token
                         refreshToken().then(newToken => { // the token is refreshed
                             sendAddEmployeeRequest(newToken); // Retry with new token
+                            console.log('Token refreshed successfully.');
                         }).catch(error => {
                             showMessage('Failed to refresh token. Please log in again.', 'danger');
                         });
                     } else {
-                        showMessage('Error: ' + error, 'danger');
+                        showMessage('Error: ' + error.message, 'danger');
                     }
                 });
             };
@@ -327,8 +373,9 @@
                 .then(result => {
                     if(!result.ok) {
                         if (result.status === 401 || result.status === 403) { // Unauthorized, so try to refresh the token
+                            console.log('Token expired. Attempting to refresh token...');
                             return refreshToken().then(newToken => { // Refresh the token
-                                localStorage.setItem('accessToken', newToken); // Update the stored token
+                                console.log('Token refreshed successfully.');
                                 return attemptRemoveEmployee(newToken); // Retry the original request with the new token
                             });
                         }

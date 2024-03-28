@@ -5,6 +5,9 @@ const path = require('path');
 const app = express();
 const port = 4000;
 
+app.get('/', (req, res) => {
+    res.redirect('https://www.google.com');
+});
 
 app.get('/:uniqueUrl', async (req, res) => {
     const { uniqueUrl } = req.params;
