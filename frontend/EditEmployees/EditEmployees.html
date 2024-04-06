@@ -7,7 +7,7 @@
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet" integrity="sha384-QWTKZyjpPEjISv5WaRU9OFeRpok6YctnYmDr5pNlyT2bRjXh0JMhjY6hW+ALEwIH" crossorigin="anonymous">
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js" integrity="sha384-YvpcrYf0tY3lHB60NNkmXc5s9fDVZLESaAA55NDzOxhy9GkcIdslK1eN7N6jIeHz" crossorigin="anonymous"></script>
     <link href="https://fonts.googleapis.com/css2?family=Roboto:wght@400;700&display=swap" rel="stylesheet">
-    <link rel="stylesheet" href="EditEmployees.css">
+    <link rel="stylesheet" href="/EditEmployees/EditEmployees.css">
 </head>
 <body>
     <div class="wrapper">
@@ -17,22 +17,74 @@
                 <button id="btnHome" type="button" class="btn btn-light" onclick="home()">Home</button>
             </h1>
 
-            
+            <button type="button" class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#addEmployeeModal">
+                Add Employee
+            </button>
+            <button type="button" class="btn btn-primary" onclick="groups()">
+                Groups
+            </button>
 
-            <div id ="addEmp" class="form-control">
-                <div id="firstName" class="form-group d-flex"> <!-- d-flex is a bootstrap class that makes the div a flexbox container -->
-                    <label for="newEmployeeFirstName" class="form-label">First name</label>
-                    <input type="text" id="newEmployeeFirstName" class="form-control" placeholder="Enter new employee first name">
+
+            <div class="modal fade" id="addEmployeeModal" tabindex="-1" aria-labelledby="addEmployeeModalLabel" aria-hidden="true">
+                <div class="modal-dialog">
+                    <div class="modal-content">
+                        <div class="modal-header">
+                            <h5 class="modal-title" id="addEmployeeModalLabel">Add New Employee</h5>
+                            <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                        </div>
+                        <div class="modal-body">
+                            <div class="form-group">
+                                <label for="modalEmployeeFirstName">First Name</label>
+                                <input type="text" id="modalEmployeeFirstName" class="form-control" placeholder="Enter first name">
+                            </div>
+                            <div class="form-group">
+                                <label for="modalEmployeeLastName">Last Name</label>
+                                <input type="text" id="modalEmployeeLastName" class="form-control" placeholder="Enter last name">
+                            </div>
+                            <div class="form-group">
+                                <label for="modalEmployeeEmail">Email</label>
+                                <input type="email" id="modalEmployeeEmail" class="form-control" placeholder="Enter email">
+                            </div>
+                        </div>
+                        <div class="modal-footer">
+                            <button type="button" class="btn btn-danger" data-bs-dismiss="modal">Close</button>
+                            <button type="button" class="btn btn-success" onclick="addEmployee()">Add employee</button>
+                        </div>
+                    </div>
                 </div>
-                <div id="lastName" class="form-group d-flex">
-                    <label for="newEmployeeLastName" class="form-label">Last name</label>
-                    <input type="text" id="newEmployeeLastName" class="form-control" placeholder="Enter new employee last name">
+            </div>
+
+            <div class="modal fade" id="editEmployeeModal" tabindex="-1" aria-labelledby="editEmployeeModalLabel" aria-hidden="true">
+                <div class="modal-dialog">
+                    <div class="modal-content">
+                        <div class="modal-header">
+                            <h5 class="modal-title" id="editEmployeeModalLabel">Edit Employee</h5>
+                            <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                        </div>
+                        <div class="modal-body">
+                            <div class="form-group">
+                                <label for="editModalEmployeeFirstName">First Name</label>
+                                <input type="text" id="editModalEmployeeFirstName" class="form-control" placeholder="Enter first name">
+                                <input type="hidden" id="originalModalEmployeeFirstName">
+                            </div>
+                            <div class="form-group">
+                                <label for="editModalEmployeeLastName">Last Name</label>
+                                <input type="text" id="editModalEmployeeLastName" class="form-control" placeholder="Enter last name">
+                                <input type="hidden" id="originalModalEmployeeLastName">
+                            </div>
+                            <div class="form-group">
+                                <label for="editModalEmployeeEmail">Email</label>
+                                <input type="email" id="editModalEmployeeEmail" class="form-control" placeholder="Enter email">
+                                <input type="hidden" id="originalModalEmployeeEmail">
+                            </div>
+                        </div>
+                        <input type="hidden" id="originalEmployeeId">
+                        <div class="modal-footer">
+                            <button type="button" class="btn btn-danger" data-bs-dismiss="modal">Close</button>
+                            <button type="button" class="btn btn-success" onclick="saveEmployeeChanges()">Save</button>
+                        </div>
+                    </div>
                 </div>
-                <div id="email" class="form-group d-flex">
-                    <label for="newEmployeeEmail" class="form-label">Email address</label>
-                    <input type="email" id="newEmployeeEmail" class="form-control" placeholder="Enter new employee email">
-                </div>
-                <button id="btnAdd" onclick="addEmployee()" class="btn btn-primary">Add</button>
             </div>
 
             <div id="messageDisplay" class="alert" style="display: none;"></div>
@@ -59,6 +111,14 @@
     </div>
 
     <script>
+
+        function home() {
+            window.location.href = '/home';
+        }
+
+        function groups() {
+            window.location.href = '/groups';
+        }
 
         // function copyLink() {
         //     const copyText = document.querySelector('#generator .form-control[type="text"]');
@@ -120,13 +180,9 @@
         let currentPage = 0; // Current page index
         let totalEmployees = 0; // Total number of employees
         const pageSize = 10; // Employees per page
-
-        function home() {
-            window.location.href = '/home';
-        }
         
         let globalEmployees = [];
-        const listConatiner = document.getElementById('employeeList');
+        const listContainer = document.getElementById('employeeList');
         const searchInput = document.getElementById('searchEmail');
 
         function handleResponse(response) {
@@ -182,20 +238,44 @@
             const listContainer = document.getElementById('employeeList');
             listContainer.innerHTML = '';
             console.log(employees);
-            if (Array.isArray(employees)) {
+
+            if (Array.isArray(employees) && employees.length > 0) {
+                const table = document.createElement('table');
+                table.className = 'table';
+
+                const thead = document.createElement('thead');
+                thead.innerHTML = `
+                    <tr>
+                        <th scope="col">First Name</th>
+                        <th scope="col">Last Name</th>
+                        <th scope="col">Email</th>
+                        <th scope="col">Actions</th>
+                    </tr>
+                `;
+                table.appendChild(thead);
+
+                const tbody = document.createElement('tbody');
+
                 employees.forEach(employee => {
-                    const item = document.createElement('div');
-                    item.classList.add('list-group-item', 'list-group-item-action', 'd-flex', 'justify-content-between', 'align-items-center');
+                    const row = document.createElement('tr');
                     const uniqueLink = `http://localhost:4000/${employee.token}`;
-                    item.innerHTML = `${employee.firstName} ${employee.lastName} (${employee.email})
-                                <div class = "button-group">
-                                    <button onclick="displayLink('${uniqueLink}')" class="btn btn-success btn-sm">Generate link</button>
-                                    <button onclick="removeEmployee('${employee.email}')" class="btn btn-danger btn-sm">Remove</button>
-                                </div>`;
-                    listContainer.appendChild(item);
+                    row.innerHTML = `
+                        <td>${employee.firstName}</td>
+                        <td>${employee.lastName}</td>
+                        <td>${employee.email}</td>
+                        <td>
+                            <button class="btn btn-success btn-sm" onclick="displayLink('${uniqueLink}')">Generate link</button>
+                            <button class="btn btn-warning btn-sm" onclick="editEmployee('${employee.id}')">Edit</button>
+                            <button class="btn btn-danger btn-sm" onclick="removeEmployee('${employee.email}')">Remove</button>
+                        </td>
+                    `;
+                    tbody.appendChild(row);
                 });
+
+                table.appendChild(tbody);
+                listContainer.appendChild(table);
             } else {
-                console.error('Expected an array of employees, received:', employees);
+                listContainer.textContent = 'No employees found.';
             }
         }
 
@@ -299,18 +379,25 @@
         }
 
         function addEmployee() {
-            event.preventDefault();
-            const firstName = document.getElementById('newEmployeeFirstName').value;
-            const lastName = document.getElementById('newEmployeeLastName').value;
-            const email = document.getElementById('newEmployeeEmail').value;
+            const firstName = document.getElementById('modalEmployeeFirstName').value;
+            const lastName = document.getElementById('modalEmployeeLastName').value;
+            const email = document.getElementById('modalEmployeeEmail').value;
             const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/; // Email validation regex - forces the user to add the format of email address
             //const emailRegex = /^[^\s@]+@gmail\.com$/; -> if we want to restrict the email to only gmail
             if(!emailRegex.test(email)){
                 showMessage('Please enter a valid email address!', 'danger');
+                var modalElement = document.getElementById('addEmployeeModal');
+                var modalInstance = bootstrap.Modal.getInstance(modalElement);
+                if (modalInstance) {
+                    modalInstance.hide();
+                }
+                document.getElementById('modalEmployeeFirstName').value = '';
+                document.getElementById('modalEmployeeLastName').value = '';
+                document.getElementById('modalEmployeeEmail').value = '';
                 return;
             }
 
-            const sendAddEmployeeRequest = (token) => { // This attemptRemoveEmployee function will be called recursively if the token needs to be refreshed
+            const sendAddEmployeeRequest = (token) => { // This sendAddEmployeeRequest function will be called recursively if the token needs to be refreshed
                 fetch('/addEmployee', {
                     method: 'POST',
                     headers: {
@@ -334,10 +421,10 @@
                 .then(data => {
                     showMessage(data.message, 'danger');
                     if (data.message.includes('Employee added')) {
-                        messageDisplay.className = 'alert alert-info';
-                        document.getElementById('newEmployeeEmail').value = '';
-                        document.getElementById('newEmployeeFirstName').value = '';
-                        document.getElementById('newEmployeeLastName').value = '';
+                        messageDisplay.className = 'alert alert-success';
+                        document.getElementById('modalEmployeeFirstName').value = '';
+                        document.getElementById('modalEmployeeLastName').value = '';
+                        document.getElementById('modalEmployeeEmail').value = '';
                         fetchEmployees(); // Refresh the employee list
                     }
                 })
@@ -354,6 +441,11 @@
                     }
                 });
             };
+            var modalElement = document.getElementById('addEmployeeModal');
+            var modalInstance = bootstrap.Modal.getInstance(modalElement);
+            if (modalInstance) {
+                modalInstance.hide();
+            }
 
             sendAddEmployeeRequest(localStorage.getItem('accessToken'));
         }
@@ -400,6 +492,96 @@
             attemptRemoveEmployee(localStorage.getItem('accessToken'));
 
         }
+
+        function editEmployee(employeeId) {
+            event.preventDefault();
+
+           const employee = globalEmployees.find(e => e.id == employeeId);
+
+            if(!employee) {
+                console.error('Employee not found');
+                return;
+            }
+
+            document.getElementById('editModalEmployeeFirstName').value = employee.firstName;
+            document.getElementById('editModalEmployeeLastName').value = employee.lastName;
+            document.getElementById('editModalEmployeeEmail').value = employee.email;
+            document.getElementById('originalModalEmployeeFirstName').value = employee.firstName;
+            document.getElementById('originalModalEmployeeLastName').value = employee.lastName;
+            document.getElementById('originalModalEmployeeEmail').value = employee.email;
+            document.getElementById('originalEmployeeId').value = employee.id;
+
+            var editModal = new bootstrap.Modal(document.getElementById('editEmployeeModal'));
+            editModal.show();
+        }
+
+        function saveEmployeeChanges() {
+            const employeeId = document.getElementById('originalEmployeeId').value;
+            const oldFirstName = document.getElementById('originalModalEmployeeFirstName').value;
+            const oldLastName = document.getElementById('originalModalEmployeeLastName').value;
+            const oldEmail = document.getElementById('originalModalEmployeeEmail').value;
+            const newFirstName = document.getElementById('editModalEmployeeFirstName').value;
+            const newLastName = document.getElementById('editModalEmployeeLastName').value;
+            const newEmail = document.getElementById('editModalEmployeeEmail').value;
+
+            const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+            if(!emailRegex.test(newEmail)){
+                showMessage('Please enter a valid email address!', 'danger');
+                var modalElement = document.getElementById('editEmployeeModal');
+                var modalInstance = bootstrap.Modal.getInstance(modalElement);
+                if (modalInstance) {
+                    modalInstance.hide();
+                }
+                return;
+            }
+
+            const attemptEditEmployee = (token) => {
+                fetch('/updateEmployee', {
+                method: 'PUT',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'Authorization': `Bearer ${localStorage.getItem('accessToken')}`
+                },
+                body: JSON.stringify({ employeeId, oldFirstName, oldLastName, oldEmail, newFirstName, newLastName, newEmail}),
+                })
+                .then(response => {
+                    if (response.ok) {
+                        return response.json();
+                    } else if (response.status === 401 || response.status === 403) { // Unauthorized, so try to refresh the token
+                        console.log('Token expired. Attempting to refresh token...');
+                        throw new Error('Token expired or invalid'); // if we get this error
+                    } else if (response.status === 400) {
+                        throw new Error('All fields are required!');
+                    } 
+                })
+                .then(data => {
+                    showMessage(data.message, 'danger');
+                    if (data.message.includes('Employee updated') || data.message.includes('Employee email updated') || data.message.includes('Employee name updated') || data.message.includes('No changes made')) {
+                        messageDisplay.className = 'alert alert-warning';
+                    }
+                    fetchEmployees();
+                    const editModal = document.getElementById('editEmployeeModal');
+                    var modalInstance = bootstrap.Modal.getInstance(editModal);
+                    if (modalInstance) {
+                        modalInstance.hide();
+                    }
+                })
+                .catch(error => {
+                    if (error.message === 'Token expired or invalid') { // we will begin this part of code and refresh the token
+                        refreshToken().then(newToken => { // the token is refreshed
+                            attemptEditEmployee(newToken); // Retry with new token
+                            console.log('Token refreshed successfully.');
+                        }).catch(error => {
+                            showMessage('Failed to refresh token. Please log in again.', 'danger');
+                        });
+                    } else {
+                        showMessage('Error: ' + error.message, 'danger');
+                    }
+                });
+            };
+            attemptEditEmployee(localStorage.getItem('accessToken'));
+        }
+
     </script>
 </body>
 </html>

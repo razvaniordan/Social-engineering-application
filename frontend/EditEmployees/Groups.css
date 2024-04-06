@@ -1,0 +1,80 @@
+@import url("https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700;800;900&display=swap");
+@import url("https://fonts.googleapis.com/css2?family=Abel&family=Space+Grotesk:wght@300..700&family=Yanone+Kaffeesatz:wght@200..700&display=swap");
+
+.wrapper { display: none;}
+
+body {
+
+  justify-content: center;
+  align-items: center;
+  min-height: 100vh;
+  background: url('img.jpg') no-repeat;
+  background-size: cover;
+  background-position: center;
+}
+
+* {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+    font-family: "Poppins", sans-serif;
+}
+
+h1 {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-top: -5px;
+    text-align: left;
+    text-shadow: 1px 1px 3px #000000;
+    color: rgb(7, 120, 196);
+    background-color: rgb(112, 142, 189);
+    padding: 10px;
+    border-color: #911a11;
+
+    font-family: "Yanone Kaffeesatz", sans-serif;
+    font-optical-sizing: auto;
+    font-weight: 600;
+    font-size: 2.5rem;
+    font-style: normal;
+
+    box-shadow: 0px 5px 10px #4779bb;
+}
+
+#btnAdd {
+    border-radius: 5px;
+    flex-grow: 0; /* Prevents the button from growing */
+    width: 150px;
+}
+
+.btn-primary {
+    width: 100%;
+    padding: 10px;
+    border: none;
+    border-radius: 5px;
+    background-color: #007bff;
+    color: white;
+    cursor: pointer;
+    margin-bottom: 10px;
+}
+
+#pageIndicator {
+    color: white;
+}
+
+.button-group {
+    display: flex;
+    justify-content: end;
+    gap: 10px;
+}
+
+#searchGroup {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    justify-content: start;
+    flex-grow: 1; /* Make both items take up equal space */
+    margin-right: 10px; /* Add some margin to the right of the search field if needed */
+    margin-bottom: 10px;
+    max-width: 650px;
+}

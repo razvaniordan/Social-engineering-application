@@ -1,0 +1,497 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Edit Groups</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet" integrity="sha384-QWTKZyjpPEjISv5WaRU9OFeRpok6YctnYmDr5pNlyT2bRjXh0JMhjY6hW+ALEwIH" crossorigin="anonymous">
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js" integrity="sha384-YvpcrYf0tY3lHB60NNkmXc5s9fDVZLESaAA55NDzOxhy9GkcIdslK1eN7N6jIeHz" crossorigin="anonymous"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Roboto:wght@400;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="/EditEmployees/Groups.css">
+</head>
+<body>
+    <div class="wrapper">
+        <form action="">
+            <h1>
+                Groups
+                <button id="btnHome" type="button" class="btn btn-light" onclick="home()">Home</button>
+            </h1>
+
+            <button type="button" class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#addGroupModal">
+                Add Group
+            </button>
+
+            <div class="modal fade" id="addGroupModal" tabindex="-1" aria-labelledby="addGroupModalLabel" aria-hidden="true">
+                <div class="modal-dialog">
+                    <div class="modal-content">
+                        <div class="modal-header">
+                            <h5 class="modal-title" id="addGroupModalLabel">Add New Group</h5>
+                            <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                        </div>
+                        <div class="modal-body">
+                            <div class="form-group">
+                                <label for="modalGroupName">Group name</label>
+                                <input type="text" id="modalGroupName" class="form-control" placeholder="Enter group name">
+                            </div>
+                            <div class="form-group">
+                                <label for="modalGroupDescription">Description</label>
+                                
+                                <textarea id="modalGroupDescription" class="form-control" placeholder="Group description" maxlength="30"></textarea>
+                                <small id="descriptionCharCount">0/30</small>
+                            </div>
+                        </div>
+                        <div class="modal-footer">
+                            <button type="button" class="btn btn-danger" data-bs-dismiss="modal">Close</button>
+                            <button type="button" class="btn btn-success" onclick="addGroup()">Add group</button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="modal fade" id="editGroupModal" tabindex="-1" aria-labelledby="editGroupModalLabel" aria-hidden="true">
+                <div class="modal-dialog">
+                    <div class="modal-content">
+                        <div class="modal-header">
+                            <h5 class="modal-title" id="editGroupModalLabel">Edit Group</h5>
+                            <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                        </div>
+                        <div class="modal-body">
+                            <div class="form-group">
+                                <label for="editModalGroupName">Group name</label>
+                                <input type="text" id="editModalGroupName" class="form-control" placeholder="Enter group name">
+                                <input type="hidden" id="originalGroupName">
+                            </div>
+                            <div class="form-group">
+                                <label for="editModalGroupDescription">Description</label>
+                                
+                                <textarea id="editModalGroupDescription" class="form-control" placeholder="Group description" maxlength="30"></textarea>
+                                <small id="editDescriptionCharCount">0/30</small>
+                                <input type="hidden" id="originalGroupDescription">
+                            </div>
+                        </div>
+                        <input type="hidden" id="originalGroupId">
+                        <div class="modal-footer">
+                            <button type="button" class="btn btn-danger" data-bs-dismiss="modal">Close</button>
+                            <button type="button" class="btn btn-success" onclick="saveGroupChanges()">Save</button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div id="messageDisplay" class="alert" style="display: none;"></div>
+
+            <input type="text" id="searchGroup" class="form-control" placeholder="Search group by name">
+
+            <div id="paginationControls">
+                <button onclick="changePage(-1, event)" class="btn btn-secondary">Previous</button>
+                <span id="pageIndicator"></span>
+                <button onclick="changePage(1, event)" class="btn btn-secondary">Next</button>
+            </div>
+
+            <div id="groupList" class="list-group mt-3"></div>
+            
+            
+            
+        </form>
+    </div>
+
+    <script>
+
+    function home() {
+        window.location.href = '/home';
+    }
+
+    document.addEventListener('DOMContentLoaded', () => {
+
+        refreshToken().then(() => {
+            // After successfully refreshing the token, display the content and load data:
+            document.querySelector('.wrapper').style.display = 'block';
+            fetchGroups();
+        }).catch(() => {
+            // If the token refresh fails, logout the user and redirect to the login page:
+            logout(true);
+        });
+    });
+
+    function refreshToken() {
+        return fetch('/token', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json'
+            }
+        })
+        .then(response => {
+            if (!response.ok) {
+                throw new Error(`HTTTP status ${response.status}`);
+            }
+            return response.json();
+        })
+        .then(data => {
+            if (data.accessToken) {
+                localStorage.setItem('accessToken', data.accessToken); // Update the stored access token
+                return data.accessToken;
+            } else {
+                throw new Error('Missing access token');
+            }
+        })
+        .catch(error => {
+            localStorage.removeItem('accessToken'); // Clear invalid or expired tokens
+            throw error; // Rethrow the error for the next catch block
+        });
+    }
+
+    function logout(failedAuth = false) {
+        if (failedAuth) {
+            alert('Session expired, please login again.');
+        }
+        // Here we send a request to the server to remove the refresh token from the database
+        fetch('/logout', {
+            method: 'DELETE',
+            headers: {
+                'Authorization': `Bearer ${localStorage.getItem('accessToken')}`,
+                'Content-Type': 'application/json'
+            },
+            body: JSON.stringify({ token: refreshToken })
+        }).then(() => {
+            localStorage.removeItem('accessToken');
+            window.location.href = '/'; // Redirect to the login page
+        }).catch(error => {
+            console.error('Error invalidating refresh token:', error);
+        });
+    }
+
+    function showMessage(message, type) {
+        const messageDisplay = document.getElementById('messageDisplay');
+        messageDisplay.textContent = message; // Set the text of the message display area
+        messageDisplay.style.display = 'block'; // Make the message display area visible
+        messageDisplay.className = `alert alert-${type}`;
+    }
+
+    let currentPage = 0; // Current page index
+    let totalGroups = 0; // Total number of groups
+    const pageSize = 10; // Groups per page
+    
+    let globalGroups = [];
+    const listConatiner = document.getElementById('groupList');
+    const searchInput = document.getElementById('searchGroup');
+
+    function handleResponse(response) {
+        if (response.ok) return response.json();
+        if (response.status === 401) {
+            // Unauthorized, attempt to refresh the token
+            return refreshToken().then(() => {
+                // After refresh, retry the original request
+                return fetch(response.url, {
+                    headers: {
+                        'Authorization': `Bearer ${localStorage.getItem('accessToken')}`
+                    }
+                }).then(res => {
+                    if (res.ok) return res.json();
+                    throw new Error('Failed to fetch after token refresh');
+                });
+            });
+        }
+        throw new Error('Network response was not ok.');
+    }
+
+    function fetchGroups() {
+        const fetchOptions = {
+            headers: {
+                'Authorization': `Bearer ${localStorage.getItem('accessToken')}`
+            }
+        };
+
+        fetch(`/groupsList?page=${currentPage}&size=${pageSize}&search=${encodeURIComponent(searchInput.value)}`)
+            .then(handleResponse) // This will check for 401 status and attempt to refresh the token.
+            //.then(response => response.json())
+            .then(data => {
+                globalGroups = data.rows;
+                totalGroups = data.count;
+                // Check if the current page is beyond the new total pages and adjust accordingly
+                const totalPageCount = Math.ceil(totalGroups / pageSize);
+                if (currentPage >= totalPageCount) {
+                    currentPage = Math.max(0, totalPageCount - 1); // Adjust to the last page if current page exceeds total pages
+                    if (totalPageCount > 0){
+                        fetchGroups(); // Refetch groups for the new current page
+                    } else {
+                        loadGroups([]); // Prevent further execution in this call
+                    }
+                } else {
+                    updatePageIndicator(totalGroups, currentPage, pageSize);
+                    loadGroups(globalGroups);
+                }
+
+            }).catch(error => console.error('Error fetching groups:', error.message));
+    }
+
+    function loadGroups(groups) { 
+        const listContainer = document.getElementById('groupList');
+        listContainer.innerHTML = '';
+
+        // create table and headers if groups exist
+        if (Array.isArray(groups) && groups.length > 0) {
+            const table = document.createElement('table');
+            table.className = 'table';
+
+            // create table headers
+            const thead = document.createElement('thead');
+            thead.innerHTML = `
+                <tr>
+                    <th scope="col">Group Name</th>
+                    <th scope="col">Description</th>
+                    <th scope="col">Actions</th>
+                </tr>
+            `;
+            table.appendChild(thead);
+
+            // create table body
+            const tbody = document.createElement('tbody');
+
+            // populate table rows
+            groups.forEach(group => {
+                const row = document.createElement('tr');
+                row.innerHTML = `
+                    <td>${group.name}</td>
+                    <td>${group.description}</td>
+                    <td>
+                        <button onclick="editGroup(${group.id})"
+                            class="btn btn-warning btn-sm">Edit</button>
+                        <button onclick="removeGroup('${group.name}')" class="btn btn-danger btn-sm">Remove</button>
+                    </td>
+                `;
+                tbody.appendChild(row);
+            });
+
+            table.appendChild(tbody);
+            listContainer.appendChild(table);
+        } else {
+            listContainer.textContent = 'No groups found.';
+        }
+    }
+
+    function changePage(direction) {
+        event.preventDefault();
+        const newPage = currentPage + direction;
+        // Check new page is within range
+        if (newPage < 0 || newPage * pageSize >= totalGroups) return;
+        currentPage = newPage;
+        fetchGroups();
+    }
+
+    function updatePageIndicator(total, currentPage, pageSize) {
+        document.getElementById('pageIndicator').textContent = `Page ${currentPage + 1} of ${Math.ceil(total / pageSize)}`;
+    }
+
+    let debounceTimeout;
+    const debounceDelay = 300; // milliseconds
+
+    function debouncedLoadGroups() {
+        clearTimeout(debounceTimeout);
+        debounceTimeout = setTimeout(() => {
+            currentPage = 0; // Reset to first page when searching
+            fetchGroups();
+        }, debounceDelay);
+    }
+
+    document.getElementById('searchGroup').addEventListener('input', debouncedLoadGroups);
+
+    document.addEventListener('DOMContentLoaded', function() {
+        // Existing event listener for the add group modal
+        document.getElementById('modalGroupDescription').addEventListener('input', function() {
+            const currentLength = this.value.length;
+            const maxLength = this.getAttribute('maxlength');
+            document.getElementById('descriptionCharCount').textContent = `${currentLength}/${maxLength}`;
+        });
+
+        // Add event listener for the edit group modal
+        document.getElementById('editModalGroupDescription').addEventListener('input', function() {
+            const currentLength = this.value.length;
+            const maxLength = this.getAttribute('maxlength');
+            document.getElementById('editDescriptionCharCount').textContent = `${currentLength}/${maxLength}`;
+        });
+    });
+
+
+
+    function addGroup() {
+        const name = document.getElementById('modalGroupName').value;
+        const description = document.getElementById('modalGroupDescription').value;
+
+        const sendAddGroupRequest = (token) => { // This sendAddGroupRequest function will be called recursively if the token needs to be refreshed
+            fetch('/addGroup', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'Authorization': `Bearer ${token}`
+                },
+                body: JSON.stringify({ name, description }),
+            })
+            .then(response => {
+                if (response.ok) {
+                    return response.json();
+                } else if (response.status === 401 || response.status === 403) { // Unauthorized, so try to refresh the token
+                    console.log('Token expired. Attempting to refresh token...');
+                    throw new Error('Token expired or invalid'); // if we get this error
+                } else if (response.status === 400) {
+                    throw new Error('Group name is required!');
+                } else if (response.status === 409) {
+                    return response.json();
+                }
+            })
+            .then(data => {
+                showMessage(data.message, 'danger');
+                if (data.message.includes('Group added')) {
+                    messageDisplay.className = 'alert alert-success';
+                    fetchGroups(); // Refresh the group list
+                }
+                document.getElementById('modalGroupName').value = '';
+                document.getElementById('modalGroupDescription').value = '';
+            })
+            .catch(error => {
+                if (error.message === 'Token expired or invalid') { // we will begin this part of code and refresh the token
+                    refreshToken().then(newToken => { // the token is refreshed
+                        sendAddGroupRequest(newToken); // Retry with new token
+                        console.log('Token refreshed successfully.');
+                    }).catch(error => {
+                        showMessage('Failed to refresh token. Please log in again.', 'danger');
+                    });
+                } else {
+                    showMessage('Error: ' + error.message, 'danger');
+                }
+            });
+            var modalElement = document.getElementById('addGroupModal');
+            var modalInstance = bootstrap.Modal.getInstance(modalElement);
+            if (modalInstance) {
+                modalInstance.hide();
+            }
+            document.getElementById('descriptionCharCount').textContent = '0/30';
+        };
+
+        sendAddGroupRequest(localStorage.getItem('accessToken'));
+    }
+
+    function removeGroup(name) {
+        event.preventDefault();
+        const attemptRemoveGroup = (token) => { // This attemptRemoveEmployee function will be called recursively if the token needs to be refreshed
+            fetch('/removeGroup', {
+                method: 'DELETE',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'Authorization': `Bearer ${token}`
+                },
+                body: JSON.stringify({ name }),
+            })
+            .then(result => {
+                if(!result.ok) {
+                    if (result.status === 401 || result.status === 403) { // Unauthorized, so try to refresh the token
+                        console.log('Token expired. Attempting to refresh token...');
+                        return refreshToken().then(newToken => { // Refresh the token
+                            console.log('Token refreshed successfully.');
+                            return attemptRemoveGroup(newToken); // Retry the original request with the new token
+                        });
+                    }
+                    if (result.status === 404) {
+                        throw new Error('Group not found');
+                    }
+                    throw new Error(`${result.status} - ${result.statusText}`);
+                }
+                return result.json();
+            })
+            .then(data => {
+                showMessage(data.message, 'info'); // Show succes or failure
+                fetchGroups(); // Refresh the group list
+            })
+            .catch(error => {
+                console.error(error);
+                showMessage(error.message, 'danger');
+            });
+        };
+
+        // Start the process with the current token
+        attemptRemoveGroup(localStorage.getItem('accessToken'));
+    }
+
+    function editGroup(groupId) {
+        event.preventDefault();
+        
+        const group = globalGroups.find(g => g.id === groupId);
+        if(!group) {
+            console.error('Group not found');
+            return;
+        }
+
+        document.getElementById('editModalGroupName').value = group.name;
+        document.getElementById('editModalGroupDescription').value = group.description;
+        document.getElementById('originalGroupName').value = group.name; // hidden field to store the original name
+        document.getElementById('originalGroupId').value = group.id; // hidden field to store the group id
+        document.getElementById('originalGroupDescription').value = group.description; // hidden field to store the original description
+
+        document.getElementById('editDescriptionCharCount').textContent = `${group.description.length}/30`;
+
+        var editModal = new bootstrap.Modal(document.getElementById('editGroupModal'));
+        editModal.show();
+    }
+
+    function saveGroupChanges() {
+        const groupId = document.getElementById('originalGroupId').value;
+        const oldName = document.getElementById('originalGroupName').value;
+        const newName = document.getElementById('editModalGroupName').value;
+        const description = document.getElementById('editModalGroupDescription').value;
+        const oldDescription = document.getElementById('originalGroupDescription').value;
+
+        const attemptEditGroup = (token) => {
+            fetch('/updateGroup', {
+            method: 'PUT',
+            headers: {
+                'Content-Type': 'application/json',
+                'Authorization': `Bearer ${localStorage.getItem('accessToken')}`
+            },
+            body: JSON.stringify({ groupId, oldName, newName, description, oldDescription }),
+            })
+            .then(response => {
+                if (response.ok) {
+                    return response.json();
+                } else if (response.status === 401 || response.status === 403) { // Unauthorized, so try to refresh the token
+                    console.log('Token expired. Attempting to refresh token...');
+                    throw new Error('Token expired or invalid'); // if we get this error
+                } else if (response.status === 400) {
+                    throw new Error('Group name is required!');
+                } else if (response.status === 409) {
+                    return response.json();
+                }
+                
+            })
+            .then(data => {
+                showMessage(data.message, 'danger');
+                if (data.message.includes('Group updated') || data.message.includes('Group description updated') || data.message.includes('No changes made')) {
+                    messageDisplay.className = 'alert alert-warning';
+                }
+                fetchGroups(); // Refresh the group list
+                const editModal = document.getElementById('editGroupModal');
+                var modalInstance = bootstrap.Modal.getInstance(editModal);
+                if (modalInstance) {
+                    modalInstance.hide();
+                }
+            })
+            .catch(error => {
+                if (error.message === 'Token expired or invalid') { // we will begin this part of code and refresh the token
+                    refreshToken().then(newToken => { // the token is refreshed
+                        attemptEditGroup(newToken); // Retry with new token
+                        console.log('Token refreshed successfully.');
+                    }).catch(error => {
+                        showMessage('Failed to refresh token. Please log in again.', 'danger');
+                    });
+                } else {
+                    showMessage('Error: ' + error.message, 'danger');
+                }
+            });
+        };
+
+        attemptEditGroup(localStorage.getItem('accessToken'));
+    }
+
+
+
+    </script>
+
+</body>

@@ -27,6 +27,36 @@ const Employee = sequelizeEmployee.define('Employee', {
   }
 });
 
+const Group = sequelizeEmployee.define('Group', {
+  name: {
+    type: DataTypes.STRING,
+    allowNull: false,
+    unique: true
+  },
+  description: {
+    type: DataTypes.STRING,
+    allowNull: true,
+    validate: {
+      len: [0, 30] // Limits the description to 50 characters
+    }
+  } 
+});
+
+Employee.belongsToMany(Group, { through: 'EmployeeGroup' });
+Group.belongsToMany(Employee, { through: 'EmployeeGroup' });
+
+const EmployeeGroup = sequelizeEmployee.define('EmployeeGroup', {
+  employeeId: {
+    type: DataTypes.INTEGER,
+    allowNull: false
+  },
+  groupId: {
+    type: DataTypes.INTEGER,
+    allowNull: false
+  },
+  addedDate: DataTypes.DATE
+});
+
 // set up the database connection
 const sequelize = new Sequelize({
   dialect: 'sqlite',
@@ -96,6 +126,29 @@ const ClickLog = sequelizeEmployee.define('ClickLog', {
   }
 });
 
+const SendingProfile = sequelizeEmployee.define('SendingProfile', {
+  name: {
+      type: DataTypes.STRING,
+      allowNull: false
+  },
+  smtpFrom: {
+      type: DataTypes.STRING,
+      allowNull: false
+  },
+  host: {
+      type: DataTypes.STRING,
+      allowNull: false
+  },
+  username: {
+      type: DataTypes.STRING,
+      allowNull: false
+  },
+  password: {
+      type: DataTypes.STRING,
+      allowNull: false
+  }
+});
 
 
-module.exports = { sequelize, User, sequelizeToken, RefreshToken, sequelizeEmployee, Employee, ClickLog};
+
+module.exports = { sequelize, User, sequelizeToken, RefreshToken, sequelizeEmployee, Employee, EmployeeGroup, Group, ClickLog, SendingProfile };

@@ -2,7 +2,7 @@ require('dotenv').config();
 
 const express = require('express');
 const path = require('path');
-const { User, RefreshToken, Employee, ClickLog } = require('./models');
+const { User, RefreshToken, Employee, SendingProfile, Group } = require('./models');
 const bodyParser = require('body-parser');
 const bcrypt = require('bcryptjs');
 const cors = require('cors');
@@ -17,16 +17,9 @@ const app = express();
 const port = 3000;
 
 app.use(cookieParser());
-app.use(express.static(path.join(__dirname, '../frontend/Login')));
-app.use(express.static(path.join(__dirname, '../frontend/Platform')));
-app.use(express.static(path.join(__dirname, '../frontend/EditEmployees')));
-app.use(express.static(path.join(__dirname, '../frontend/SendEmails')));
+app.use(express.static(path.join(__dirname, '../frontend')));
 app.use(cors());
 app.use(bodyParser.json());
-app.use(express.static('../frontend/Login'));
-app.use(express.static('../frontend/Platform'));
-app.use(express.static('../frontend/EditEmployees'));
-app.use(express.static('../frontend/SendEmails'));
 
 // This and the app.use(express.static()) I use in order to change the path of the html and connect frontend to the backend of the login
 // and the app would run on localhost:3000 
@@ -38,12 +31,20 @@ app.get('/home', (req, res) => {
     res.sendFile(path.join(__dirname, '../frontend/Platform/Platform.html'));
 });
 
+app.get('/groups', (req, res) => {
+    res.sendFile(path.join(__dirname, '../frontend/EditEmployees/Groups.html'));
+});
+
 app.get('/edit', (req, res) => {
     res.sendFile(path.join(__dirname, '../frontend/EditEmployees/EditEmployees.html'));
 });
 
 app.get('/send', (req, res) => {
     res.sendFile(path.join(__dirname, '../frontend/SendEmails/SendEmails.html'));
+});
+
+app.get('/profiles', (req, res) => {
+    res.sendFile(path.join(__dirname, '../frontend/SendingProfiles/SendingProfiles.html'));
 });
 
 // This endpoint is used to verify the token before making some specific requests
@@ -134,6 +135,30 @@ app.get('/employees', async (req, res) => {
     }
 });
 
+app.get('/groupsList', async (req, res) => {
+    const search = req.query.search || '';
+    const page = parseInt(req.query.page) || 0;
+    const pageSize = parseInt(req.query.size) || 10;
+    let queryOptions = {
+        where: {
+            [Op.or]: [
+                { name: { [Op.like]: `%${search}%` } },
+                //{ description: { [Op.like]: `%${search}%` } }
+            ]
+        },
+        offset: page * pageSize,
+        limit: pageSize,
+    };
+
+    try {
+        const { count, rows } = await Group.findAndCountAll(queryOptions);
+        res.json({ rows, count });
+    } catch (err) {
+        console.error('Error fetching groups:', err);
+        res.status(500).json({ message: 'An error occurred while fetching the groups.' });
+    }
+});
+
 // Endpoint to add an employee
 app.post('/addEmployee', authenticateToken, async (req, res) => {
     const { firstName, lastName, email } = req.body;
@@ -155,6 +180,30 @@ app.post('/addEmployee', authenticateToken, async (req, res) => {
     }
 });
 
+app.post('/addGroup', authenticateToken, async (req, res) => {
+    const { name, description } = req.body;
+
+    if (!name) {
+        return res.status(400).json({ message: 'Group name is required' });
+    }
+
+    if (description && description.length > 30) {
+        return res.status(400).json({ message: 'Description must be 30 characters or less' });
+    }
+
+    try {
+        await Group.create({ name, description });
+        res.status(200).json({ message: `Group added: ${name}` });
+    } catch (err) {
+        if (err.name === 'SequelizeValidationError') {
+            return res.status(400).json({ message: err.errors.map(e => e.message).join('; ') });
+        } else if (err.name === 'SequelizeUniqueConstraintError') {
+            return res.status(409).json({ message: 'A group with this name already exists' });
+        }
+        return res.status(500).json({ message: 'An error occurred while adding the group.' });
+    }
+});
+
 // Endpoint to remove an employee
 app.delete('/removeEmployee', authenticateToken, async (req, res) => {
     const { email } = req.body;
@@ -167,6 +216,108 @@ app.delete('/removeEmployee', authenticateToken, async (req, res) => {
         }
     } catch (err) {
         res.status(500).json({ message: 'An error occurred while removing the employee.' });
+    }
+});
+
+app.delete('/removeGroup', authenticateToken, async (req, res) => {
+    const { name } = req.body;
+    try {
+        const result = await Group.destroy({ where: { name } });
+        if (result > 0) {
+            res.status(200).json({ message: `Group removed: ${name}`, name });
+        } else {
+            res.status(404).json({ message: 'Group not found' });
+        }
+    } catch (err) {
+        res.status(500).json({ message: 'An error occurred while removing the group.' });
+    }
+});
+
+// Endpoint to update a group
+app.put('/updateGroup', authenticateToken, async (req, res) => {
+    const { groupId, oldName, newName, description, oldDescription } = req.body;
+
+    if (!newName) {
+        return res.status(400).json({ message: 'Group name is required' });
+    }
+
+    try {
+        const group = await Group.findByPk(groupId);
+        if (!group) {
+            return res.status(404).json({ message: 'Group not found' });
+        }
+
+        if (oldName === newName && oldDescription === description) {
+            res.status(200).json({ message: `No changes made to group: ${newName}. No update necessary.` });
+        } else if (oldName === newName) {
+            group.description = description || group.description; // Keep existing description if not provided
+            await group.save();
+            res.status(200).json({ message: `Group description updated successfully for: ${newName}` });
+        } else {
+            group.name = newName;
+            group.description = description || group.description; // Keep existing description if not provided
+            await group.save();
+            res.status(200).json({ message: `Group updated successfully from ${oldName} to ${newName}` });
+        }
+    } catch (err) {
+        console.error('Error updating group:', err);
+        res.status(500).json({ message: 'An error occurred while updating the group.' });
+    }
+});
+
+app.put('/updateEmployee', authenticateToken, async (req, res) => {
+    const { employeeId, oldFirstName, oldLastName, newFirstName, newLastName, oldEmail, newEmail } = req.body;
+
+    if (!newFirstName || !newLastName || !newEmail) {
+        return res.status(400).json({ message: 'All fields are required' });
+    }
+
+    try {
+        const employee = await Employee.findByPk(employeeId);
+        if (!employee) {
+            return res.status(404).json({ message: 'Employee not found' });
+        }
+
+        if (oldFirstName === newFirstName && oldLastName === newLastName && oldEmail === newEmail) {
+            res.status(200).json({ message: `No changes made to employee: ${newFirstName} ${newLastName}. No update necessary.` });
+        } else if (oldFirstName === newFirstName && oldLastName === newLastName) {
+            employee.email = newEmail;
+            await employee.save();
+            res.status(200).json({ message: `Employee email updated successfully for "${newFirstName} ${newLastName}" to: ${newEmail}` });
+        } else if (oldEmail === newEmail) {
+            employee.firstName = newFirstName;
+            employee.lastName = newLastName;
+            await employee.save();
+            res.status(200).json({ message: `Employee name updated successfully from "${oldFirstName} ${oldLastName}" to "${newFirstName} ${newLastName}" for ${oldEmail}` });
+        } else {
+            employee.firstName = newFirstName;
+            employee.lastName = newLastName;
+            employee.email = newEmail;
+            await employee.save();
+            res.status(200).json({ message: `Employee updated successfully from "${oldFirstName} ${oldLastName}" to "${newFirstName} ${newLastName}" and its email address to ${newEmail}` });
+        }
+    } catch (err) {
+        console.error('Error updating group:', err);
+        res.status(500).json({ message: 'An error occurred while updating the group.' });
+    }
+});
+
+app.post('/addSendingProfile', authenticateToken, async (req, res) => {
+    const { name, smtpFrom, host, username, password } = req.body;
+
+    if (!name || !smtpFrom || !host || !username || !password) {
+        return res.status(400).json({ message: 'All fields are required!' });
+    }
+
+    try {
+        await SendingProfile.create({ name, smtpFrom, host, username, password });
+        res.status(200).json({ message: `Sending profile added: ${name}` });
+    } catch (err) {
+        if (err.name === 'SequelizeUniqueConstraintError') {
+            return res.status(409).json({ message: 'A sending profile with this name already exists' });
+        }
+        console.error('Error adding sending profile:', err);
+        return res.status(500).json({ message: 'An error occurred while adding the sending profile.' });
     }
 });
 
