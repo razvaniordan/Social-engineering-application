@@ -87,6 +87,40 @@
                 </div>
             </div>
 
+            <div class="modal fade" id="assignGroupModal" tabindex="-1" aria-labelledby="assignGroupModalLabel" aria-hidden="true">
+                <div class="modal-dialog">
+                    <div class="modal-content">
+                        <input type="hidden" id="selectedEmployeeId">
+                        <div class="modal-header">
+                            <h5 class="modal-title" id="assignGroupModalLabel">Assign Group</h5>
+                            <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                        </div>
+                        <div class="modal-body">
+                            <input type="text" id="searchGroupInput" class="form-control" placeholder="Search group" onkeyup="debouncedLoadGroups()">
+                            <table id="groupListModal" class="table">
+                                <thead>
+                                    <tr>
+                                        <th scope="col">Group Name</th>
+                                        <th scope="col">Action</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    <!-- Groups will be loaded here dynamically -->
+                                </tbody>
+                            </table>
+                        </div>
+                        <div class="modal-footer">
+                            <nav aria-label="Page navigation">
+                                <ul class="pagination">
+                                    <li class="page-item"><a class="page-link" href="#" onclick="changeGroupPage(-1)">Previous</a></li>
+                                    <li class="page-item"><a class="page-link" href="#" onclick="changeGroupPage(1)">Next</a></li>
+                                </ul>
+                            </nav>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
             <div id="messageDisplay" class="alert" style="display: none;"></div>
 
             <div id="searchAndGenerate" class="form-group d-flex">
@@ -249,6 +283,7 @@
                         <th scope="col">First Name</th>
                         <th scope="col">Last Name</th>
                         <th scope="col">Email</th>
+                        <th scope="col">Group</th>
                         <th scope="col">Actions</th>
                     </tr>
                 `;
@@ -258,15 +293,20 @@
 
                 employees.forEach(employee => {
                     const row = document.createElement('tr');
+                    const groupName = employee.Group ? employee.Group.name : '<span style="color: grey;">NULL</span>';
                     const uniqueLink = `http://localhost:4000/${employee.token}`;
                     row.innerHTML = `
                         <td>${employee.firstName}</td>
                         <td>${employee.lastName}</td>
                         <td>${employee.email}</td>
+                        <td>${groupName}</td>
                         <td>
                             <button class="btn btn-success btn-sm" onclick="displayLink('${uniqueLink}')">Generate link</button>
                             <button class="btn btn-warning btn-sm" onclick="editEmployee('${employee.id}')">Edit</button>
                             <button class="btn btn-danger btn-sm" onclick="removeEmployee('${employee.email}')">Remove</button>
+                            ${groupName === '<span style="color: grey;">NULL</span>' 
+                                ? `<button class="btn btn-info btn-sm" data-bs-toggle="modal" data-bs-target="#assignGroupModal" onclick="showAssignGroupModal('${employee.id}')">Assign group</button>`
+                                : `<button class="btn btn-secondary btn-sm" onclick="exitGroup('${employee.id}')">Exit group</button>`}
                         </td>
                     `;
                     tbody.appendChild(row);
@@ -496,7 +536,7 @@
         function editEmployee(employeeId) {
             event.preventDefault();
 
-           const employee = globalEmployees.find(e => e.id == employeeId);
+            const employee = globalEmployees.find(e => e.id == employeeId);
 
             if(!employee) {
                 console.error('Employee not found');
@@ -581,6 +621,116 @@
             };
             attemptEditEmployee(localStorage.getItem('accessToken'));
         }
+
+        let totalGroups = 0; // Total number of groups
+        const pageSizeGroup = 10; // Groups per page
+        let globalGroups = [];
+        let currentPageGroup = 1;
+
+        function changeGroupPage(direction) {
+            event.preventDefault();
+            const newGroupPage = currentPageGroup + direction;
+            console.log('New page:', currentPageGroup);
+            if (newGroupPage < 0 || newGroupPage * pageSizeGroup >= totalGroups) return;
+
+            currentPageGroup = newGroupPage;
+            fetchGroups(currentPageGroup);
+        }
+
+        function debouncedLoadGroups() {
+            clearTimeout(debounceTimeout);
+            debounceTimeout = setTimeout(() => {
+                fetchGroups(0);
+            }, debounceDelay);
+        }
+
+        function fetchGroups(page) {
+            console.log('Fetching groups for page:', page);
+            currentPageGroup = page;
+            const searchQuery = document.getElementById('searchGroupInput').value;
+            const tableBody = document.getElementById('groupListModal').querySelector('tbody');
+            tableBody.innerHTML = ''; // Clear existing content
+
+            fetch(`/groupsList?page=${currentPageGroup}&size=10&search=${encodeURIComponent(searchQuery)}`)
+                .then(response => response.json())
+                .then(data => {
+                    totalGroups = data.count;
+                    globalGroups = data.rows;
+                    const totalPageCount = Math.ceil(totalGroups / pageSizeGroup);
+                    if (currentPageGroup >= totalPageCount) {
+                        currentPageGroup = Math.max(0, totalPageCount - 1); // Adjust to the last page if current page exceeds total pages
+                        if (totalPageCount > 0){
+                            data.rows.forEach(group => {
+                                const row = tableBody.insertRow();
+                                row.insertCell().textContent = group.name;
+                                const selectCell = row.insertCell();
+                                const selectButton = document.createElement('button');
+                                selectButton.textContent = 'Select';
+                                selectButton.className = 'btn btn-primary btn-sm';
+                                const selectedEmployeeId = document.getElementById('selectedEmployeeId').value;
+                                selectButton.onclick = () => assignGroupToEmployee(selectedEmployeeId, group.id);
+                                selectCell.appendChild(selectButton);
+                                console.log('Employee:', selectedEmployeeId);
+                            });
+                        }
+                    } else {
+                        data.rows.forEach(group => {
+                            const row = tableBody.insertRow();
+                            row.insertCell().textContent = group.name;
+                            const selectCell = row.insertCell();
+                            const selectButton = document.createElement('button');
+                            selectButton.textContent = 'Select';
+                            selectButton.className = 'btn btn-primary btn-sm';
+                            const selectedEmployeeId = document.getElementById('selectedEmployeeId').value;
+                            selectButton.onclick = () => assignGroupToEmployee(selectedEmployeeId, group.id);
+                            selectCell.appendChild(selectButton);
+                            console.log('Employee:', selectedEmployeeId);
+                        });
+                    }
+                })
+                .catch(error => console.error('Error loading groups:', error));
+        }
+
+        function showAssignGroupModal(employeeId) {
+            event.preventDefault();
+            document.getElementById('selectedEmployeeId').value = employeeId;
+            document.getElementById('searchGroupInput').value = '';
+            fetchGroups(0);
+            // Store the employeeId in a hidden field in the modal for later use
+            const tableBody = document.getElementById('groupListModal').querySelector('tbody');
+            tableBody.innerHTML = ''; // Clear existing content
+        }
+
+        function assignGroupToEmployee(employeeId, groupId) {
+            event.preventDefault();
+            fetch('/assignEmployeeToGroup', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'Authorization': `Bearer ${localStorage.getItem('accessToken')}`
+                },
+                body: JSON.stringify({ employeeId, groupId })
+            })
+            .then(response => {
+                if (response.ok) {
+                    return response.json();
+                }
+                throw new Error('Failed to assign group');
+            })
+            .then(data => {
+                console.log(data.message);
+                // Refresh the employee list or close the modal as needed
+                const editModal = document.getElementById('assignGroupModal');
+                var modalInstance = bootstrap.Modal.getInstance(editModal);
+                if (modalInstance) {
+                    modalInstance.hide();
+                }
+                fetchEmployees();
+            })
+            .catch(error => console.error('Error assigning group to employee', error));
+        }
+
+
 
     </script>
 </body>

@@ -78,3 +78,11 @@ h1 {
     margin-bottom: 10px;
     max-width: 650px;
 }
+
+#groupList {
+    margin-top: 50px;
+    margin-bottom: 50px;
+    padding: 10px;
+    background-color: #f4f4f4;
+    border-radius: 5px;
+}

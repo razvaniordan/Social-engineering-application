@@ -161,13 +161,15 @@ app.get('/groupsList', async (req, res) => {
 
 // Endpoint to add an employee
 app.post('/addEmployee', authenticateToken, async (req, res) => {
-    const { firstName, lastName, email } = req.body;
+    let { firstName, lastName, email } = req.body;
 
     if (!firstName || !lastName || !email) {
         return res.status(400).json({ message: 'First name, last name, and email are required' });
     }
 
     const token = crypto.createHash('sha256').update(email).digest('hex').substring(0, 8); // Generate token
+
+    email = email.toLowerCase(); // Normalize email address to lowercase
 
     try {
         await Employee.create({ firstName, lastName, email, token });
@@ -272,19 +274,21 @@ app.put('/updateEmployee', authenticateToken, async (req, res) => {
         return res.status(400).json({ message: 'All fields are required' });
     }
 
+    const newEmailLowerCase = newEmail.toLowerCase(); // Normalize email address to lowercase
+
     try {
         const employee = await Employee.findByPk(employeeId);
         if (!employee) {
             return res.status(404).json({ message: 'Employee not found' });
         }
 
-        if (oldFirstName === newFirstName && oldLastName === newLastName && oldEmail === newEmail) {
+        if (oldFirstName === newFirstName && oldLastName === newLastName && oldEmail === newEmailLowerCase) {
             res.status(200).json({ message: `No changes made to employee: ${newFirstName} ${newLastName}. No update necessary.` });
         } else if (oldFirstName === newFirstName && oldLastName === newLastName) {
-            employee.email = newEmail;
+            employee.email = newEmailLowerCase;
             await employee.save();
-            res.status(200).json({ message: `Employee email updated successfully for "${newFirstName} ${newLastName}" to: ${newEmail}` });
-        } else if (oldEmail === newEmail) {
+            res.status(200).json({ message: `Employee email updated successfully for "${newFirstName} ${newLastName}" to: ${newEmailLowerCase}` });
+        } else if (oldEmail === newEmailLowerCase) {
             employee.firstName = newFirstName;
             employee.lastName = newLastName;
             await employee.save();
@@ -292,13 +296,63 @@ app.put('/updateEmployee', authenticateToken, async (req, res) => {
         } else {
             employee.firstName = newFirstName;
             employee.lastName = newLastName;
-            employee.email = newEmail;
+            employee.email = newEmailLowerCase;
             await employee.save();
-            res.status(200).json({ message: `Employee updated successfully from "${oldFirstName} ${oldLastName}" to "${newFirstName} ${newLastName}" and its email address to ${newEmail}` });
+            res.status(200).json({ message: `Employee updated successfully from "${oldFirstName} ${oldLastName}" to "${newFirstName} ${newLastName}" and its email address to ${newEmailLowerCase}` });
         }
     } catch (err) {
         console.error('Error updating group:', err);
         res.status(500).json({ message: 'An error occurred while updating the group.' });
+    }
+});
+
+app.post('/assignEmployeeToGroup', authenticateToken, async (req, res) => {
+    let { employeeId, groupId } = req.body;
+    
+    if (!employeeId || !groupId) {
+        return res.status(400).json({ message: 'Employee ID and Group ID are required' });
+    }
+    employeeId = Number(employeeId);
+    groupId = Number(groupId);
+
+    // if(isNaN(employeeId) || isNaN(groupId)) {
+    //     return res.status(400).json({ message: 'Employee ID and Group ID must be numbers' });
+    // }
+
+    console.log(`Assigning employee with ID ${employeeId} to group with ID ${groupId}`);
+
+    try {
+        const employee = await Employee.findByPk(employeeId);
+        const group = await Group.findByPk(groupId);
+
+        if (!employee || !group) {
+            return res.status(404).json({ message: 'Employee or group not found' });
+        }
+
+        await employee.setGroup(group);
+        res.status(200).json({ message: `Employee ${employeeId} assigned to group: ${group.name}` });
+    } catch (err) {
+        console.error('Error assigning employee to group:', err);
+        res.status(500).json({ message: 'An error occurred while assigning the employee to the group.' });
+    }
+});
+
+app.post('/exitEmployeeFromGroup', authenticateToken, async (req, res) => {
+    const { employeeId } = req.body;
+
+    try {
+        const employee = await Employee.findByPk(employeeId, { include: [Group] });
+        if (!employee) {
+            return res.status(404).json({ message: 'Employee not found' });
+        }
+        const groupName = employee.Group ? employee.Group.name : 'No group';
+
+        // If the employee is part of a group, set the groupId to null to remove the association
+        await employee.setGroup(null);
+        res.status(200).json({ message: `Employee removed successfully from the "${groupName}" group.` });
+    } catch (error) {
+        console.error('Error removing employee from group:', error);
+        res.status(500).json({ message: 'An error occurred while removing the employee from the group.' });
     }
 });
 

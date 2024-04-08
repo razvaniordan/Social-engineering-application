@@ -42,20 +42,23 @@ const Group = sequelizeEmployee.define('Group', {
   } 
 });
 
-Employee.belongsToMany(Group, { through: 'EmployeeGroup' });
-Group.belongsToMany(Employee, { through: 'EmployeeGroup' });
+// Employee.belongsToMany(Group, { through: 'EmployeeGroup' });
+// Group.belongsToMany(Employee, { through: 'EmployeeGroup' });
 
-const EmployeeGroup = sequelizeEmployee.define('EmployeeGroup', {
-  employeeId: {
-    type: DataTypes.INTEGER,
-    allowNull: false
-  },
-  groupId: {
-    type: DataTypes.INTEGER,
-    allowNull: false
-  },
-  addedDate: DataTypes.DATE
-});
+Employee.belongsTo(Group);
+Group.hasMany(Employee);
+
+// const EmployeeGroup = sequelizeEmployee.define('EmployeeGroup', {
+//   employeeId: {
+//     type: DataTypes.INTEGER,
+//     allowNull: false
+//   },
+//   groupId: {
+//     type: DataTypes.INTEGER,
+//     allowNull: false
+//   },
+//   addedDate: DataTypes.DATE
+// });
 
 // set up the database connection
 const sequelize = new Sequelize({
@@ -151,4 +154,4 @@ const SendingProfile = sequelizeEmployee.define('SendingProfile', {
 
 
 
-module.exports = { sequelize, User, sequelizeToken, RefreshToken, sequelizeEmployee, Employee, EmployeeGroup, Group, ClickLog, SendingProfile };
+module.exports = { sequelize, User, sequelizeToken, RefreshToken, sequelizeEmployee, Employee, Group, ClickLog, SendingProfile };

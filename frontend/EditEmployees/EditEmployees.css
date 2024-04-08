@@ -138,3 +138,14 @@ h1 {
     justify-content: space-between; /* This will space out the text input and button within the generator */
     align-items: center; /* Align items vertically */
 }
+
+.select-group-btn {
+    width: auto; /* Adjust this as needed */
+    padding: 0.25rem 0.5rem; /* Smaller padding to reduce overall size */
+    text-align: center;
+}
+
+.tableGroups .btn {
+    margin: 0 auto; /* Center the button in the cell */
+    display: block; /* Make the button a block element to take the width of the container */
+}
