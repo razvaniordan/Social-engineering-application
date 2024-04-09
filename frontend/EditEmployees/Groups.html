@@ -14,7 +14,10 @@
         <form action="">
             <h1>
                 Groups
-                <button id="btnHome" type="button" class="btn btn-light" onclick="home()">Home</button>
+                <div class="button-container justify-content-end">
+                    <button id="btnBack" type="button" class="btn btn-light" onclick="back()">Back</button>
+                    <button id="btnHome" type="button" class="btn btn-light" onclick="home()">Home</button>
+                </div>
             </h1>
 
             <button type="button" class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#addGroupModal">
@@ -78,6 +81,42 @@
                 </div>
             </div>
 
+            <div class="modal fade" id="loadMembersModal" tabindex="-1" aria-labelledby="loadMembersModalLabel" aria-hidden="true">
+                <div class="modal-dialog modal-xl">
+                    <div class="modal-content">
+                        <div class="modal-header">
+                            <h5 class="modal-title" id="loadMembersModalLabel">Members</h5>
+                            <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                        </div>
+                        <div class="modal-body">
+                            <input type="text" id="searchMemberInput" class="form-control" placeholder="Search employee">
+                            <table id="employeeListModal" class="table table-bordered">
+                                <thead>
+                                    <tr>
+                                        <th scope="col">Employee</th>
+                                        <th scope="col">Email</th>
+                                        <th scope="col">Select</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    <!-- Groups will be loaded here dynamically -->
+                                </tbody>
+                            </table>
+                        </div>
+                        <div class="modal-footer d-flex justify-content-between align-items-center">
+
+                            <nav aria-label="Page navigation">
+                                <ul class="pagination">
+                                    <li class="page-item"><a class="page-link" href="#" onclick="changeMembersPage(-1, currentGroupName)">Previous</a></li>
+                                    <li class="page-item"><a class="page-link" href="#" onclick="changeMembersPage(1, currentGroupName)">Next</a></li>
+                                </ul>
+                            </nav>
+                            <button type="button" class="btn btn-danger" onclick="removeSelectedMembers(currentGroupName)">Remove selected</button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
             <div id="messageDisplay" class="alert" style="display: none;"></div>
 
             <input type="text" id="searchGroup" class="form-control" placeholder="Search group by name">
@@ -99,6 +138,10 @@
 
     function home() {
         window.location.href = '/home';
+    }
+
+    function back() {
+        window.location.href = '/edit';
     }
 
     document.addEventListener('DOMContentLoaded', () => {
@@ -254,8 +297,8 @@
                     <td>${group.name}</td>
                     <td>${group.description}</td>
                     <td>
-                        <button onclick="editGroup(${group.id})"
-                            class="btn btn-warning btn-sm">Edit</button>
+                        <button onclick="editGroup(${group.id})" class="btn btn-warning btn-sm">Edit</button>
+                        <button onclick="showMembersModal('${group.name}', event)" class="btn btn-info btn-sm">Members</button>
                         <button onclick="removeGroup('${group.name}')" class="btn btn-danger btn-sm">Remove</button>
                     </td>
                 `;
@@ -267,6 +310,119 @@
         } else {
             listContainer.textContent = 'No groups found.';
         }
+    }
+
+    let currentGroupName = '';
+
+    function showMembersModal(groupName) {
+        event.preventDefault();
+        currentGroupName = groupName;
+        document.getElementById('searchMemberInput').value = ''; // Clear the search input
+        document.getElementById('loadMembersModalLabel').textContent = `Members of ${groupName}`;
+        fetchMembers(0, groupName);
+        
+        var modalElement = document.getElementById('loadMembersModal');
+        var modal = new bootstrap.Modal(modalElement);
+        modal.show();
+    }
+
+    let totalMembers = 0;
+    const pageSizeMembers = 10;
+    let currentPageMembers = 0;
+    let globalMembers = [];
+    const searchMemberInput = document.getElementById('searchMemberInput');
+
+    function changeMembersPage(direction, groupName){
+        event.preventDefault();
+        console.log('currentPageMembers: ', currentPageMembers);
+        const newMembersPage = currentPageMembers + direction;
+        console.log('newMembersPage: ', newMembersPage);
+        console.log('pageSizeMembers: ', pageSizeMembers);
+        console.log('totalMembers: ', totalMembers);
+        if (newMembersPage < 0 || newMembersPage * pageSizeMembers >= totalMembers) return;
+        currentPageMembers = newMembersPage;
+        fetchMembers(currentPageMembers, groupName, searchMemberInput.value);
+    }
+
+    function fetchMembers(page, groupName, search = '') {
+        fetch(`/groupMembers?name=${encodeURIComponent(groupName)}&page=${page}&size=10&search=${encodeURIComponent(search)}`, {
+            method: 'GET',
+            headers: {
+                'Authorization': `Bearer ${localStorage.getItem('accessToken')}`
+            }
+        })
+        .then(response => response.json())
+        .then(data => {
+            totalMembers = data.count;
+            globalMembers = data.rows;
+            const tbody = document.getElementById('employeeListModal').querySelector('tbody');
+            tbody.innerHTML = ''; // Clear previous entries
+            data.members.forEach(member => {
+                const row = `<tr>
+                    <td>${member.firstName} ${member.lastName}</td>
+                    <td>${member.email}</td>
+                    <td><input type="checkbox" class="form-check-input" value="${member.id}"</td>
+                </tr>`;
+                tbody.innerHTML += row;
+            });
+        })
+        .catch(error => console.error('Error fetching group members:', error));
+    }
+
+    function removeSelectedMembers(groupName) {
+        const confirmExit = confirm('Are you sure you want to remove the selected members from the group?');
+        if (!confirmExit) {
+            return; // Stop the function if the user cancels the operation
+        }
+        const checkedBoxes = document.querySelectorAll('#employeeListModal tbody input[type="checkbox"]:checked');
+        const memberIds = Array.from(checkedBoxes).map(box => box.value);
+
+        const attemptRemoveMembers = (token) => { // This attemptRemoveMembers function will be called recursively if the token needs to be refreshed
+            fetch('/removeMembersFromGroup', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'Authorization': `Bearer ${token}`
+                },
+                body: JSON.stringify({ memberIds, groupName })
+            })
+            .then(response => {
+                if (response.ok){
+                    return response.json();
+                } else if (response.status === 401 || response.status === 403) { // Unauthorized, so try to refresh the token
+                    console.log('Token expired. Attempting to refresh token...');
+                    throw new Error('Token expired or invalid'); // if we get this error
+                } else {
+                    return response.json().then(data => {
+                        throw new Error(data.message || 'Group not found');
+                    });
+                }
+            })
+            .then(data => {
+                showMessage(data.message, 'info');
+                const membersModal = document.getElementById('loadMembersModal');
+                var modalInstance = bootstrap.Modal.getInstance(membersModal);
+                if (modalInstance) {
+                    modalInstance.hide();
+                }
+                fetchMembers(currentPage, groupName); // Refresh the list after removal
+            })
+            .catch(error => {
+                if (error.message === 'Token expired or invalid') { // we will begin this part of code and refresh the token
+                    refreshToken().then(newToken => { // the token is refreshed
+                        attemptRemoveMembers(newToken); // Retry with new token
+                        console.log('Token refreshed successfully.');
+                    }).catch(error => {
+                        alert('Failed to refresh token. Please log in again.', 'danger');
+                        logout(true);
+                    });
+                } else {
+                    showMessage('Error: ' + error.message, 'danger');
+                }
+            });
+        }
+
+        attemptRemoveMembers(localStorage.getItem('accessToken'));
     }
 
     function changePage(direction) {
@@ -293,7 +449,16 @@
         }, debounceDelay);
     }
 
+    function debouncedLoadMembers() {
+        clearTimeout(debounceTimeout);
+        debounceTimeout = setTimeout(() => {
+            const searchValue = document.getElementById('searchMemberInput').value.trim();
+            fetchMembers(0, currentGroupName, searchValue);
+        }, debounceDelay);
+    }
+
     document.getElementById('searchGroup').addEventListener('input', debouncedLoadGroups);
+    document.getElementById('searchMemberInput').addEventListener('input', debouncedLoadMembers);
 
     document.addEventListener('DOMContentLoaded', function() {
         // Existing event listener for the add group modal
@@ -372,10 +537,6 @@
 
     function removeGroup(name) {
         event.preventDefault();
-        const confirmExit = confirm(`Are you sure you want to delete the group ${name}?`);
-        if (!confirmExit) {
-            return; // Stop the function if the user cancels the operation
-        }
         const attemptRemoveGroup = (token) => { // This attemptRemoveEmployee function will be called recursively if the token needs to be refreshed
             fetch('/removeGroup', {
                 method: 'DELETE',
@@ -410,9 +571,42 @@
                 showMessage(error.message, 'danger');
             });
         };
+        fetch(`/checkGroupEmployees?name=${encodeURIComponent(name)}`, {
+            method: 'GET',
+            headers: {
+                'Authorization': `Bearer ${localStorage.getItem('accessToken')}`
+            }
+        })
+        .then(response => {
+            if (!response.ok) {
+                throw new Error(`HTTP status ${response.status}`);
+            }
+            return response.json();
+        })
+        .then(data => {
+            let message = `Are you sure you want to delete the group ${name}?`;
+            if (data.hasEmployees) {
+                message += '\nDeleting this group will also remove the employees associations with it.';
+            } else{
+                message += '\nThis group has no employees associated with it.';
+            }
+
+            const confirmExit = confirm(message);
+            if (!confirmExit) {
+                return; // Stop the function if the user cancels the operation
+            }
+
+            // Proceed with group deletion if confirmed
+            attemptRemoveGroup(localStorage.getItem('accessToken'), name);
+        })
+        .catch(error => {
+            console.error('Error checking group employees:', error);
+            showMessage(error.message, 'danger');
+        });
+        
 
         // Start the process with the current token
-        attemptRemoveGroup(localStorage.getItem('accessToken'));
+        //attemptRemoveGroup(localStorage.getItem('accessToken'));
     }
 
     function editGroup(groupId) {

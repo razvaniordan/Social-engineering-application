@@ -499,6 +499,7 @@
             if (!confirmExit) {
                 return; // Stop the function if the user cancels the operation
             }
+
             const attemptRemoveEmployee = (token) => { // This attemptRemoveEmployee function will be called recursively if the token needs to be refreshed
                 fetch('/removeEmployee', {
                     method: 'DELETE',
@@ -651,7 +652,6 @@
         }
 
         function fetchGroups(page) {
-            console.log('Fetching groups for page:', page);
             currentPageGroup = page;
             const searchQuery = document.getElementById('searchGroupInput').value;
             const tableBody = document.getElementById('groupListModal').querySelector('tbody');

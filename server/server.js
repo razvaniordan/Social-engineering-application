@@ -137,30 +137,6 @@ app.get('/employees', async (req, res) => {
     }
 });
 
-app.get('/groupsList', async (req, res) => {
-    const search = req.query.search || '';
-    const page = parseInt(req.query.page) || 0;
-    const pageSize = parseInt(req.query.size) || 10;
-    let queryOptions = {
-        where: {
-            [Op.or]: [
-                { name: { [Op.like]: `%${search}%` } },
-                //{ description: { [Op.like]: `%${search}%` } }
-            ]
-        },
-        offset: page * pageSize,
-        limit: pageSize,
-    };
-
-    try {
-        const { count, rows } = await Group.findAndCountAll(queryOptions);
-        res.json({ rows, count });
-    } catch (err) {
-        console.error('Error fetching groups:', err);
-        res.status(500).json({ message: 'An error occurred while fetching the groups.' });
-    }
-});
-
 // Endpoint to add an employee
 app.post('/addEmployee', authenticateToken, async (req, res) => {
     let { firstName, lastName, email } = req.body;
@@ -227,22 +203,6 @@ app.delete('/removeGroup', authenticateToken, async (req, res) => {
     const { name } = req.body;
     try {
 
-        // const groupWithEmployees = await Group.findOne({
-        //     where: { name },
-        //     include: [{
-        //         model: Employee,
-        //         attributes: ['id']
-        //     }]
-        // });
-
-        // if(!groupWithEmployees) {
-        //     return res.status(404).json({ message: 'Group not found' });
-        // }
-
-        // if (groupWithEmployees.Employees.length > 0) {
-        //     return res.status(409).json({ message: `Group ${name} has employees assigned to it. Remove employees from the group first.` });
-        // }
-
         const result = await Group.destroy({ where: { name } });
         if (result > 0) {
             res.status(200).json({ message: `Group removed: ${name}`, name });
@@ -251,6 +211,174 @@ app.delete('/removeGroup', authenticateToken, async (req, res) => {
         }
     } catch (err) {
         res.status(500).json({ message: 'An error occurred while removing the group.' });
+    }
+});
+
+app.get('/checkGroupEmployees', async (req, res) => {
+    const { name } = req.query;
+
+    try {
+        const group = await Group.findOne({
+            where: { name },
+            include: [{
+                model: Employee,
+                attributes: ['id'] // We just need to know if there are any employees, not their details
+            }]
+        });
+
+        if (!group) {
+            return res.status(404).json({ message: 'Group not found' });
+        }
+
+        // Check if there are any employees in the group
+        const hasEmployees = group.Employees && group.Employees.length > 0;
+        res.json({ hasEmployees });
+    } catch (error) {
+        console.error('Error checking group employees:', error);
+        res.status(500).json({ message: 'An error occurred while checking for group employees.' });
+    }
+});
+
+// app.get('/groupMembers', async (req, res) => {  // THIS IS THE OLD VERSION OF THE ENDPOINT THAT WORKED FOR SEARCHING MEMBERS BUT NOT PAGINATION
+//     const { name, page = 0, pageSize = 10, search = '' } = req.query;
+
+//     try {
+
+//         const whereClause = {
+//             name,
+//             ...(search && {
+//                 '$Employees.firstName$': { [Op.like]: `%${search}%` },
+//                 '$Employees.lastName$': { [Op.like]: `%${search}%` },
+//                 '$Employees.email$': { [Op.like]: `%${search}%` },
+//             })
+//         };
+
+//         const group = await Group.findOne({
+//             where: { name },
+//             include: [{
+//                 model: Employee,
+//                 attributes: ['id', 'firstName', 'lastName', 'email'],
+//                 where: search ? {
+//                     [Op.or]: [
+//                         { firstName: { [Op.like]: `%${search}%` } },
+//                         { lastName: { [Op.like]: `%${search}%` } },
+//                         { email: { [Op.like]: `%${search}%` } }
+//                     ]
+//                 } : {}
+//             }],
+//             offset: page * parseInt(pageSize, 10),
+//             limit: parseInt(pageSize, 10)
+//         });
+
+//         if (!group) {
+//             return res.status(404).json({ message: 'Group not found' });
+//         }
+
+//         res.json({ members: group.Employees });
+//     } catch (error) {
+//         console.error('Error fetching group members:', error);
+//         res.status(500).json({ message: 'An error occurred while fetching the group members.' });
+//     }
+// });
+
+app.get('/groupMembers', async (req, res) => {
+    const { name, page = 0, pageSize = 10, search = '' } = req.query;
+
+    try {
+        // First, find the group to ensure it exists
+        const group = await Group.findOne({ where: { name } });
+        if (!group) {
+            return res.status(404).json({ message: 'Group not found' });
+        }
+
+        // Construct the where clause for employees
+        const employeeWhereClause = search ? {
+            [Op.or]: [
+                { firstName: { [Op.like]: `%${search}%` } },
+                { lastName: { [Op.like]: `%${search}%` } },
+                { email: { [Op.like]: `%${search}%` } }
+            ],
+            groupId: group.id
+        } : { groupId: group.id };
+
+        // Query to get the total count of employees in the group
+        const totalMembersCount = await Employee.count({
+            where: employeeWhereClause
+        });
+
+        // Query to get the paginated list of employees
+        const employees = await Employee.findAll({
+            where: employeeWhereClause,
+            attributes: ['id', 'firstName', 'lastName', 'email'],
+            limit: parseInt(pageSize, 10),
+            offset: page * parseInt(pageSize, 10)
+        });
+
+        res.json({ 
+            count: totalMembersCount, 
+            members: employees 
+        });
+    } catch (error) {
+        console.error('Error fetching group members:', error);
+        res.status(500).json({ message: 'An error occurred while fetching the group members.' });
+    }
+});
+
+
+app.post('/removeMembersFromGroup', authenticateToken, async (req, res) => {
+    const { memberIds, groupName } = req.body;
+
+    console.log('Group name: ', groupName);
+
+    try {
+        const group = await Group.findOne({ where: { name: groupName } });
+        console.log('memberIds:', memberIds);
+        console.log('group.id:', group.id);
+
+
+        const result = await Employee.update({ GroupId: null }, {
+            where: {
+                id: {
+                    [Op.in]: memberIds
+                },
+                GroupId: group.id
+            }
+        });
+
+        if(result > 0) {
+            res.status(200).json({ message: `Removed selected members from ${groupName}.` });
+        } else {
+            res.status(404).json({ message: 'No members found in the group' });
+        }
+
+    } catch (error) {
+        console.error('Error removing members from group:', error);
+        res.status(500).json({ message: 'An error occurred while removing members from the group.' });
+    }
+});
+
+
+app.get('/groupsList', async (req, res) => {
+    const search = req.query.search || '';
+    const page = parseInt(req.query.page) || 0;
+    const pageSize = parseInt(req.query.size) || 10;
+    let queryOptions = {
+        where: {
+            [Op.or]: [
+                { name: { [Op.like]: `%${search}%` } },
+                //{ description: { [Op.like]: `%${search}%` } }
+            ]
+        },
+        offset: page * pageSize,
+        limit: pageSize,
+    };
+
+    try {
+        const { count, rows } = await Group.findAndCountAll(queryOptions);
+        res.json({ rows, count });
+    } catch (err) {
+        console.error('Error fetching groups:', err);
+        res.status(500).json({ message: 'An error occurred while fetching the groups.' });
     }
 });
 
