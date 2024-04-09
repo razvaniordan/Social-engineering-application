@@ -12,6 +12,7 @@ const { access } = require('fs');
 const { Op } = require('sequelize');
 const cookieParser = require('cookie-parser');
 const crypto = require('crypto');
+const { group } = require('console');
 
 const app = express();
 const port = 3000;
@@ -112,6 +113,7 @@ app.get('/employees', async (req, res) => {
     const page = parseInt(req.query.page) || 0;
     const pageSize = parseInt(req.query.size) || 10;
     let queryOptions = {
+        include: [Group],
         where: {
             [Op.or]: [
                 { firstName: { [Op.like]: `%${search}%` } },
@@ -208,11 +210,11 @@ app.post('/addGroup', authenticateToken, async (req, res) => {
 
 // Endpoint to remove an employee
 app.delete('/removeEmployee', authenticateToken, async (req, res) => {
-    const { email } = req.body;
+    const { email, employeeName } = req.body;
     try {
         const result = await Employee.destroy({ where: { email } });
         if (result > 0) {
-            res.status(200).json({ message: `Employee removed: ${email}`, email });
+            res.status(200).json({ message: `Employee ${employeeName} removed: ${email}`, email });
         } else {
             res.status(404).json({ message: 'Employee not found' });
         }
@@ -224,6 +226,23 @@ app.delete('/removeEmployee', authenticateToken, async (req, res) => {
 app.delete('/removeGroup', authenticateToken, async (req, res) => {
     const { name } = req.body;
     try {
+
+        // const groupWithEmployees = await Group.findOne({
+        //     where: { name },
+        //     include: [{
+        //         model: Employee,
+        //         attributes: ['id']
+        //     }]
+        // });
+
+        // if(!groupWithEmployees) {
+        //     return res.status(404).json({ message: 'Group not found' });
+        // }
+
+        // if (groupWithEmployees.Employees.length > 0) {
+        //     return res.status(409).json({ message: `Group ${name} has employees assigned to it. Remove employees from the group first.` });
+        // }
+
         const result = await Group.destroy({ where: { name } });
         if (result > 0) {
             res.status(200).json({ message: `Group removed: ${name}`, name });
@@ -315,10 +334,6 @@ app.post('/assignEmployeeToGroup', authenticateToken, async (req, res) => {
     employeeId = Number(employeeId);
     groupId = Number(groupId);
 
-    // if(isNaN(employeeId) || isNaN(groupId)) {
-    //     return res.status(400).json({ message: 'Employee ID and Group ID must be numbers' });
-    // }
-
     console.log(`Assigning employee with ID ${employeeId} to group with ID ${groupId}`);
 
     try {
@@ -330,7 +345,7 @@ app.post('/assignEmployeeToGroup', authenticateToken, async (req, res) => {
         }
 
         await employee.setGroup(group);
-        res.status(200).json({ message: `Employee ${employeeId} assigned to group: ${group.name}` });
+        res.status(200).json({ message: `Employee ${employee.firstName} ${employee.lastName} assigned to group: ${group.name}` });
     } catch (err) {
         console.error('Error assigning employee to group:', err);
         res.status(500).json({ message: 'An error occurred while assigning the employee to the group.' });
@@ -341,15 +356,19 @@ app.post('/exitEmployeeFromGroup', authenticateToken, async (req, res) => {
     const { employeeId } = req.body;
 
     try {
-        const employee = await Employee.findByPk(employeeId, { include: [Group] });
+        const employee = await Employee.findByPk(employeeId, {
+            include: [Group]
+        });
+
         if (!employee) {
             return res.status(404).json({ message: 'Employee not found' });
         }
-        const groupName = employee.Group ? employee.Group.name : 'No group';
 
-        // If the employee is part of a group, set the groupId to null to remove the association
+        const groupName = employee.Group ? employee.Group.name : 'No group';
+        
         await employee.setGroup(null);
-        res.status(200).json({ message: `Employee removed successfully from the "${groupName}" group.` });
+
+        res.status(200).json({ message: `Employee ${employee.firstName} ${employee.lastName} removed from the group ${groupName} successfully.` });
     } catch (error) {
         console.error('Error removing employee from group:', error);
         res.status(500).json({ message: 'An error occurred while removing the employee from the group.' });

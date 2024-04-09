@@ -251,6 +251,7 @@
                 .then(data => {
                     globalEmployees = data.rows;
                     totalEmployees = data.count;
+                    loadEmployees(globalEmployees);
                     // Check if the current page is beyond the new total pages and adjust accordingly
                     const totalPageCount = Math.ceil(totalEmployees / pageSize);
                     if (currentPage >= totalPageCount) {
@@ -301,9 +302,9 @@
                         <td>${employee.email}</td>
                         <td>${groupName}</td>
                         <td>
-                            <button class="btn btn-success btn-sm" onclick="displayLink('${uniqueLink}')">Generate link</button>
+                            <button class="btn btn-success btn-sm" onclick="displayLink('${uniqueLink}', '${employee.firstName} ${employee.lastName}')">Generate link</button>
                             <button class="btn btn-warning btn-sm" onclick="editEmployee('${employee.id}')">Edit</button>
-                            <button class="btn btn-danger btn-sm" onclick="removeEmployee('${employee.email}')">Remove</button>
+                            <button class="btn btn-danger btn-sm" onclick="removeEmployee('${employee.email}', '${employee.firstName} ${employee.lastName}')">Remove</button>
                             ${groupName === '<span style="color: grey;">NULL</span>' 
                                 ? `<button class="btn btn-info btn-sm" data-bs-toggle="modal" data-bs-target="#assignGroupModal" onclick="showAssignGroupModal('${employee.id}')">Assign group</button>`
                                 : `<button class="btn btn-secondary btn-sm" onclick="exitGroup('${employee.id}')">Exit group</button>`}
@@ -319,7 +320,7 @@
             }
         }
 
-        function displayLink(uniqueLink, isRetry = false) {
+        function displayLink(uniqueLink, employeeName, isRetry = false) {
             if (!isRetry) event.preventDefault();
 
             fetch('/validateToken', {
@@ -332,12 +333,13 @@
                     // The token is valid, proceed with displaying the link
                     const linkInput = document.querySelector('#generator .form-control[type="text"]');
                     linkInput.value = uniqueLink;
+                    showMessage(`Link generated successfully for employee ${employeeName}!`, 'success');
                 } else if (response.status === 401 || response.status === 403) {
                     // Token might be expired or invalid, try to refresh it
                     console.log('Token expired. Attempting to refresh token...');
                     return refreshToken().then(newToken => {
                         // Retry the operation with the new token
-                        displayLink(uniqueLink, true); // by that "true" we are telling the function that it is a retry to avoid using the event.preventDefault() again
+                        displayLink(uniqueLink, employeeName, true); // by that "true" we are telling the function that it is a retry to avoid using the event.preventDefault() again
                         console.log('Token refreshed successfully.');
                     });
                 } else {
@@ -491,8 +493,12 @@
         }
 
 
-        function removeEmployee(email) {
+        function removeEmployee(email, employeeName) {
             event.preventDefault();
+            const confirmExit = confirm(`Are you sure you want to delete the employee ${employeeName} with the email ${email}?`);
+            if (!confirmExit) {
+                return; // Stop the function if the user cancels the operation
+            }
             const attemptRemoveEmployee = (token) => { // This attemptRemoveEmployee function will be called recursively if the token needs to be refreshed
                 fetch('/removeEmployee', {
                     method: 'DELETE',
@@ -500,7 +506,7 @@
                         'Content-Type': 'application/json',
                         'Authorization': `Bearer ${token}`
                     },
-                    body: JSON.stringify({ email }),
+                    body: JSON.stringify({ email, employeeName }),
                 })
                 .then(result => {
                     if(!result.ok) {
@@ -703,32 +709,106 @@
 
         function assignGroupToEmployee(employeeId, groupId) {
             event.preventDefault();
-            fetch('/assignEmployeeToGroup', {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json',
-                    'Authorization': `Bearer ${localStorage.getItem('accessToken')}`
-                },
-                body: JSON.stringify({ employeeId, groupId })
-            })
-            .then(response => {
-                if (response.ok) {
-                    return response.json();
-                }
-                throw new Error('Failed to assign group');
-            })
-            .then(data => {
-                console.log(data.message);
-                // Refresh the employee list or close the modal as needed
-                const editModal = document.getElementById('assignGroupModal');
-                var modalInstance = bootstrap.Modal.getInstance(editModal);
-                if (modalInstance) {
-                    modalInstance.hide();
-                }
-                fetchEmployees();
-            })
-            .catch(error => console.error('Error assigning group to employee', error));
+            const sendAssignGroupRequest = (token) => { // This sendAssignGroupRequest function will be called recursively if the token needs to be refreshed
+                fetch('/assignEmployeeToGroup', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Authorization': `Bearer ${token}`
+                    },
+                    body: JSON.stringify({ employeeId, groupId })
+                })
+                .then(response => {
+                    if (response.ok) {
+                        return response.json();
+                    } else if (response.status === 401 || response.status === 403) { // Unauthorized, so try to refresh the token
+                        console.log('Token expired. Attempting to refresh token...');
+                        throw new Error('Token expired or invalid'); // if we get this error
+                    } else if (response.status === 400) {
+                        throw new Error('First name, last name and email are required');
+                    } else if (response.status === 409) {
+                        return response.json();
+                    }
+                })
+                .then(data => {
+                    showMessage(data.message, "info"); // Show a success message
+                    // Refresh the employee list or close the modal as needed
+                    const editModal = document.getElementById('assignGroupModal');
+                    var modalInstance = bootstrap.Modal.getInstance(editModal);
+                    if (modalInstance) {
+                        modalInstance.hide();
+                    }
+                    fetchEmployees();
+                })
+                .catch(error => { 
+                    if (error.message === 'Token expired or invalid') { // we will begin this part of code and refresh the token
+                        refreshToken().then(newToken => { // the token is refreshed
+                            sendAssignGroupRequest(newToken); // Retry with new token
+                            console.log('Token refreshed successfully.');
+                        }).catch(error => {
+                            alert('Failed to refresh token. Please log in again.', 'danger');
+                            logout(true);
+                        });
+                    } else {
+                        showMessage('Error: ' + error.message, 'danger');
+                    }
+                });
+            };
+
+            sendAssignGroupRequest(localStorage.getItem('accessToken'));
         }
+
+        function exitGroup(employeeId) {
+            event.preventDefault(); // Prevent the default action of the event
+
+            const confirmExit = confirm("Are you sure you want to remove this employee from their group?");
+            if (!confirmExit) {
+                return; // Stop the function if the user cancels the operation
+            }
+
+            const sendExitGroupRequest = (token) => { // This sendExitGroupRequest function will be called recursively if the token needs to be refreshed
+                fetch('/exitEmployeeFromGroup', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Authorization': `Bearer ${token}`
+                    },
+                    body: JSON.stringify({ employeeId })
+                })
+                .then(response => {
+                    if (response.ok) {
+                        return response.json();
+                    } else if (response.status === 401 || response.status === 403) { // Unauthorized, so try to refresh the token
+                        console.log('Token expired. Attempting to refresh token...');
+                        throw new Error('Token expired or invalid'); // if we get this error
+                    } else if (response.status === 400) {
+                        throw new Error('First name, last name and email are required');
+                    } else if (response.status === 409) {
+                        return response.json();
+                    }
+                })
+                .then(data => {
+                    showMessage(data.message, "info"); // Show a success message
+                    fetchEmployees(); // Refresh the employees list to show the updated group assignment
+                })
+                .catch(error => {
+                    if (error.message === 'Token expired or invalid') { // we will begin this part of code and refresh the token
+                        refreshToken().then(newToken => { // the token is refreshed
+                            sendExitGroupRequest(newToken); // Retry with new token
+                            console.log('Token refreshed successfully.');
+                        }).catch(error => {
+                            alert('Failed to refresh token. Please log in again.', 'danger');
+                            logout(true);
+                        });
+                    } else {
+                        showMessage('Error: ' + error.message, 'danger');
+                    }
+                });
+            };
+
+            sendExitGroupRequest(localStorage.getItem('accessToken'));
+        }
+
 
 
 

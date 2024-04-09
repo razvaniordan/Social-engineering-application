@@ -372,6 +372,10 @@
 
     function removeGroup(name) {
         event.preventDefault();
+        const confirmExit = confirm(`Are you sure you want to delete the group ${name}?`);
+        if (!confirmExit) {
+            return; // Stop the function if the user cancels the operation
+        }
         const attemptRemoveGroup = (token) => { // This attemptRemoveEmployee function will be called recursively if the token needs to be refreshed
             fetch('/removeGroup', {
                 method: 'DELETE',
