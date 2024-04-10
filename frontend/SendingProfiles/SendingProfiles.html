@@ -34,8 +34,14 @@
                                 <input type="text" id="modalProfileName" class="form-control" placeholder="Profile name">
                             </div>
                             <div class="form-group">
-                                <label for="modalSmptFrom">SMTP From</label>
-                                <input type="text" id="modalSmtpFrom" class="form-control" placeholder="Name <test@example.com>">
+                                <label for="modalProfileInterfaceType">Interface type</label>
+                                <input type="text" id="modalProfileInterfaceType" class="form-control" placeholder="SMTP" value="SMTP" readonly style="color: grey; background-color: #e9ecef;">
+                            </div>
+                            <div class="form-group">
+                                <label for="modalSmtpFrom">SMTP From</label>
+                                <input type="text" id="modalSmtpFrom" class="form-control" placeholder="Name &lt;test@example.com&gt;">
+                                <!-- &lt; and &gt; are HTML entities for "<" and ">" because < and > may be interpreted as part of an HTML tag, 
+                                    which could lead to rendering issues or unintended behavior.-->
                             </div>
                             <div class="form-group">
                                 <label for="modalHost">Host</label>
@@ -64,13 +70,115 @@
                 </div>
             </div>
 
+            <div class="modal fade" id="editProfileModal" tabindex="-1" aria-labelledby="editProfileModalLabel" aria-hidden="true">
+                <div class="modal-dialog">
+                    <div class="modal-content">
+                        <div class="modal-header">
+                            <h5 class="modal-title" id="editProfileModalLabel">Edit Profile</h5>
+                            <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                        </div>
+                        <div class="modal-body">
+                            <div class="form-group">
+                                <label for="editModalProfileName">Name</label>
+                                <input type="text" id="editModalProfileName" class="form-control" placeholder="Profile name">
+                                <input type="hidden" id="originalProfileName">
+                            </div>
+                            <div class="form-group">
+                                <label for="editModalSmtpFrom">SMTP From</label>
+                                <input type="text" id="editModalSmtpFrom" class="form-control" placeholder="Name &lt;test@example.com&gt;">  
+                                <!-- &lt; and &gt; are HTML entities for "<" and ">" because < and > may be interpreted as part of an HTML tag, 
+                                    which could lead to rendering issues or unintended behavior.-->
+                                <input type="hidden" id="originalSmtpFrom">
+                            </div>
+                            <div class="form-group">
+                                <label for="editModalHost">Host</label>
+                                <input type="text" id="editModalHost" class="form-control" placeholder="smtp.example.com:25">
+                                <input type="hidden" id="originalHost">
+                            </div>
+                            <div class="form-group">
+                                <label for="editModalUsername">Username</label>
+                                <input type="text" id="editModalUsername" class="form-control" placeholder="Username">
+                                <input type="hidden" id="originalUsername">
+                            </div>
+                            <div class="form-group">
+                                <label for="editModalPassword">Password</label>
+                                <input type="password" id="editModalPassword" class="form-control" placeholder="Password">
+                                <input type="hidden" id="originalPassword">
+                                <div class="form-check">
+                                    <input class="form-check-input" type="checkbox" id="editShowPasswordCheckbox">
+                                    <label class="form-check-label" for="editShowPasswordCheckbox">
+                                        Show Password
+                                    </label>
+                                </div>
+                            </div>
+                        </div>
+                        <input type="hidden" id="originalProfileId">
+                        <div class="modal-footer">
+                            <button type="button" class="btn btn-danger" data-bs-dismiss="modal">Close</button>
+                            <button type="button" class="btn btn-success" onclick="saveProfileChanges()">Save</button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
             <div id="messageDisplay" class="alert" style="display: none;"></div>
             
+            <div id="searchProfile" class="form-group d-flex">
+                <input type="text" id="searchProfileName" class="form-control" placeholder="Search profile">
+            </div>
+
+            <div id="paginationControls">
+                <button onclick="changePage(-1, event)" class="btn btn-secondary">Previous</button>
+                <span id="pageIndicator"></span>
+                <button onclick="changePage(1, event)" class="btn btn-secondary">Next</button>
+            </div>
+
+            <div id="profileList" class="list-group mt-3"></div>
         
         </form>
     </div>
 
     <script>
+
+        function home() {
+            window.location.href = '/home';
+        }
+
+        let currentPage = 0; // Current page index
+        let totalProfiles = 0; // Total number of profiles
+        const pageSize = 10; // Profiles per page
+        
+        let globalProfiles = [];
+        const listContainer = document.getElementById('profileList');
+        const searchInput = document.getElementById('searchProfileName');
+
+        function changePage(direction) {
+            event.preventDefault();
+            const newPage = currentPage + direction;
+            // Check new page is within range
+            if (newPage < 0 || newPage * pageSize >= totalProfiles) return;
+            currentPage = newPage;
+            fetchProfiles();
+        }
+
+        function updatePageIndicator(total, currentPage, pageSize) {
+            document.getElementById('pageIndicator').textContent = `Page ${currentPage + 1} of ${Math.ceil(total / pageSize)}`;
+        }
+
+        let debounceTimeout;
+        const debounceDelay = 300; // milliseconds
+
+        function debouncedLoadProfiles() {
+            clearTimeout(debounceTimeout);
+            debounceTimeout = setTimeout(() => {
+                currentPage = 0; // Reset to first page when searching
+                fetchProfiles();
+            }, debounceDelay);
+        }
+
+        document.getElementById('searchProfileName').addEventListener('input', debouncedLoadProfiles);
+        document.addEventListener('DOMContentLoaded', fetchProfiles);
+
         document.addEventListener('DOMContentLoaded', () => {
             refreshToken().then(() => {
                 // After successfully refreshing the token, display the content and load data:
@@ -81,8 +189,252 @@
             });
         });
 
-        function home() {
-            window.location.href = '/home';
+        function handleResponse(response) {
+            if (response.ok) return response.json();
+            if (response.status === 401) {
+                // Unauthorized, attempt to refresh the token
+                return refreshToken().then(() => {
+                    // After refresh, retry the original request
+                    return fetch(response.url, {
+                        headers: {
+                            'Authorization': `Bearer ${localStorage.getItem('accessToken')}`
+                        }
+                    }).then(res => {
+                        if (res.ok) return res.json();
+                        throw new Error('Failed to fetch after token refresh');
+                    });
+                });
+            }
+            throw new Error('Network response was not ok.');
+        }
+
+        function fetchProfiles() {
+            const fetchOptions = {
+                headers: {
+                    'Authorization': `Bearer ${localStorage.getItem('accessToken')}`
+                }
+            };
+
+            fetch(`/getProfiles?page=${currentPage}&size=${pageSize}&search=${encodeURIComponent(searchInput.value)}`)
+                .then(handleResponse) // This will check for 401 status and attempt to refresh the token.
+                //.then(response => response.json())
+                .then(data => {
+                    globalProfiles = data.rows;
+                    totalProfiles = data.count;
+                    loadProfiles(globalProfiles);
+                    // Check if the current page is beyond the new total pages and adjust accordingly
+                    const totalPageCount = Math.ceil(totalProfiles / pageSize);
+                    if (currentPage >= totalPageCount) {
+                        currentPage = Math.max(0, totalPageCount - 1); // Adjust to the last page if current page exceeds total pages
+                        if (totalPageCount > 0){
+                            fetchProfiles(); // Refetch employees for the new current page
+                        } else {
+                            loadProfiles([]); // Prevent further execution in this call
+                        }
+                    } else {
+                        updatePageIndicator(totalProfiles, currentPage, pageSize);
+                        loadProfiles(globalProfiles);
+                    }
+
+                }).catch(error => console.error('Error fetching sending profiles:', error.message));
+        }
+
+        function loadProfiles(profiles) { 
+            const listContainer = document.getElementById('profileList');
+            listContainer.innerHTML = '';
+            console.log(profiles);
+
+            if (Array.isArray(profiles) && profiles.length > 0) {
+                const table = document.createElement('table');
+                table.className = 'table';
+
+                const thead = document.createElement('thead');
+                thead.innerHTML = `
+                    <tr>
+                        <th scope="col">Name</th>
+                        <th scope="col">Interface Type</th>
+                        <th scope="col">Last modified date</th>
+                        <th scope="col">Actions</th>
+                    </tr>
+                `;
+                table.appendChild(thead);
+
+                const tbody = document.createElement('tbody');
+
+                profiles.forEach(profile => {
+                    const row = document.createElement('tr');
+                    const updatedAt = new Date(profile.updatedAt);
+
+                    const readableDate = updatedAt.toLocaleString('en-US', {
+                        month: 'long',
+                        day: 'numeric',
+                        year: 'numeric',
+                        hour: '2-digit',
+                        minute: '2-digit',
+                        hour12: true
+                    });
+
+                    row.innerHTML = `
+                        <td>${profile.name}</td>
+                        <td>SMTP</td>
+                        <td>${readableDate}</td>
+                        <td>
+                            <button class="btn btn-warning btn-sm" onclick="editProfile('${profile.id}')">Edit</button>
+                            <button class="btn btn-danger btn-sm" onclick="removeProfile('${profile.id}', '${profile.name}')">Remove</button>
+                        </td>
+                    `;
+                    tbody.appendChild(row);
+                });
+
+                table.appendChild(tbody);
+                listContainer.appendChild(table);
+            } else {
+                listContainer.textContent = 'No profile found.';
+            }
+        }
+
+        function removeProfile(id, profileName) {
+            event.preventDefault();
+            const confirmExit = confirm(`Are you sure you want to delete the profile ${profileName}?`);
+            if (!confirmExit) {
+                return; // Stop the function if the user cancels the operation
+            }
+
+            const attemptRemoveProfile = (token) => { // This attemptRemoveProfile function will be called recursively if the token needs to be refreshed
+                fetch('/removeProfile', {
+                    method: 'DELETE',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Authorization': `Bearer ${token}`
+                    },
+                    body: JSON.stringify({ id, profileName }),
+                })
+                .then(result => {
+                    if(!result.ok) {
+                        if (result.status === 401 || result.status === 403) { // Unauthorized, so try to refresh the token
+                            console.log('Token expired. Attempting to refresh token...');
+                            return refreshToken().then(newToken => { // Refresh the token
+                                console.log('Token refreshed successfully.');
+                                return attemptRemoveProfile(newToken); // Retry the original request with the new token
+                            });
+                        }
+                        if (result.status === 404) {
+                            throw new Error('Profile not found');
+                        }
+                        throw new Error(`${result.status} - ${result.statusText}`);
+                    }
+                    return result.json();
+                })
+                .then(data => {
+                    showMessage(data.message, 'info'); // Show succes or failure
+                    fetchProfiles(); // Refresh the profile list
+                })
+                .catch(error => {
+                    console.error(error);
+                    showMessage(error.message, 'danger');
+                });
+            };
+
+            // Start the process with the current token
+            attemptRemoveProfile(localStorage.getItem('accessToken'));
+
+        }
+
+        function editProfile(profileId) {
+            event.preventDefault();
+
+            const profile = globalProfiles.find(p => p.id == profileId);
+
+            if(!profile) {
+                console.error('Profile not found');
+                return;
+            }
+
+            document.getElementById('editModalProfileName').value = profile.name;
+            document.getElementById('editModalSmtpFrom').value = profile.smtpFrom;
+            document.getElementById('editModalHost').value = profile.host;
+            document.getElementById('editModalUsername').value = profile.username;
+            document.getElementById('editModalPassword').value = profile.password;
+            document.getElementById('originalProfileName').value = profile.name;
+            document.getElementById('originalSmtpFrom').value = profile.smtpFrom;
+            document.getElementById('originalHost').value = profile.host;
+            document.getElementById('originalUsername').value = profile.username;
+            document.getElementById('originalPassword').value = profile.password;
+            document.getElementById('originalProfileId').value = profile.id;
+
+            var editModal = new bootstrap.Modal(document.getElementById('editProfileModal'));
+            editModal.show();
+        }
+
+        function saveProfileChanges() {
+            const profileId = document.getElementById('originalProfileId').value;
+            const oldName = document.getElementById('originalProfileName').value;
+            const oldSmtpFrom = document.getElementById('originalSmtpFrom').value;
+            const oldHost = document.getElementById('originalHost').value;
+            const oldUsername = document.getElementById('originalUsername').value;
+            const oldPassword = document.getElementById('originalPassword').value;
+            const newName = document.getElementById('editModalProfileName').value;
+            const newSmtpFrom = document.getElementById('editModalSmtpFrom').value;
+            const newHost = document.getElementById('editModalHost').value;
+            const newUsername = document.getElementById('editModalUsername').value;
+            const newPassword = document.getElementById('editModalPassword').value;
+
+            const hostRegex = /^(smtp\.[a-zA-Z0-9-]+\.[a-zA-Z]{2,6}):(\d{1,5})$/;
+            if (!hostRegex.test(newHost)) {
+                showMessage('Invalid host format. Please use the format "smtp.example.com:25"', 'danger');
+                var modalElement = document.getElementById('editProfileModal');
+                var modalInstance = bootstrap.Modal.getInstance(modalElement);
+                if (modalInstance) {
+                    modalInstance.hide();
+                }
+                return;
+            }
+
+            const attemptEditProfile = (token) => {
+                fetch('/updateProfile', {
+                method: 'PUT',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'Authorization': `Bearer ${localStorage.getItem('accessToken')}`
+                },
+                body: JSON.stringify({ profileId, oldName, oldSmtpFrom, oldHost, oldUsername, oldPassword, newName, newSmtpFrom, newHost, newUsername, newPassword }),
+                })
+                .then(response => {
+                    if (response.ok) {
+                        return response.json();
+                    } else if (response.status === 401 || response.status === 403) { // Unauthorized, so try to refresh the token
+                        console.log('Token expired. Attempting to refresh token...');
+                        throw new Error('Token expired or invalid'); // if we get this error
+                    } else if (response.status === 400) {
+                        throw new Error('All fields are required!');
+                    } 
+                })
+                .then(data => {
+                    showMessage(data.message, 'danger');
+                    if (data.message.includes('Profile updated successfully') || data.message.includes('No changes made')) {
+                        messageDisplay.className = 'alert alert-warning';
+                    }
+                    fetchProfiles();
+                    const editModal = document.getElementById('editProfileModal');
+                    var modalInstance = bootstrap.Modal.getInstance(editModal);
+                    if (modalInstance) {
+                        modalInstance.hide();
+                    }
+                })
+                .catch(error => {
+                    if (error.message === 'Token expired or invalid') { // we will begin this part of code and refresh the token
+                        refreshToken().then(newToken => { // the token is refreshed
+                            attemptEditEmployee(newToken); // Retry with new token
+                            console.log('Token refreshed successfully.');
+                        }).catch(error => {
+                            showMessage('Failed to refresh token. Please log in again.', 'danger');
+                        });
+                    } else {
+                        showMessage('Error: ' + error.message, 'danger');
+                    }
+                });
+            };
+            attemptEditProfile(localStorage.getItem('accessToken'));
         }
 
         document.getElementById('showPasswordCheckbox').addEventListener('change', function () {
@@ -197,7 +549,9 @@
                         if (modalInstance) {
                             modalInstance.hide();
                         }
+                        fetchProfiles();
                     }
+
                 })
                 .catch(error => {
                     if (error.message === 'Token expired or invalid') { // we will begin this part of code and refresh the token

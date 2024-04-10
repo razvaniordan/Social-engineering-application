@@ -12,7 +12,7 @@ const { access } = require('fs');
 const { Op } = require('sequelize');
 const cookieParser = require('cookie-parser');
 const crypto = require('crypto');
-const { group } = require('console');
+const { group, profile } = require('console');
 
 const app = express();
 const port = 3000;
@@ -193,6 +193,20 @@ app.delete('/removeEmployee', authenticateToken, async (req, res) => {
             res.status(200).json({ message: `Employee ${employeeName} removed: ${email}`, email });
         } else {
             res.status(404).json({ message: 'Employee not found' });
+        }
+    } catch (err) {
+        res.status(500).json({ message: 'An error occurred while removing the employee.' });
+    }
+});
+
+app.delete('/removeProfile', authenticateToken, async (req, res) => {
+    const { id, profileName } = req.body;
+    try {
+        const result = await SendingProfile.destroy({ where: { id } });
+        if (result > 0) {
+            res.status(200).json({ message: `Profile ${profileName} has been succesfully removed.`, id });
+        } else {
+            res.status(404).json({ message: 'Profile not found' });
         }
     } catch (err) {
         res.status(500).json({ message: 'An error occurred while removing the employee.' });
@@ -448,8 +462,51 @@ app.put('/updateEmployee', authenticateToken, async (req, res) => {
             res.status(200).json({ message: `Employee updated successfully from "${oldFirstName} ${oldLastName}" to "${newFirstName} ${newLastName}" and its email address to ${newEmailLowerCase}` });
         }
     } catch (err) {
-        console.error('Error updating group:', err);
-        res.status(500).json({ message: 'An error occurred while updating the group.' });
+        console.error('Error updating employee:', err);
+        res.status(500).json({ message: 'An error occurred while updating the employee.' });
+    }
+});
+
+app.put('/updateProfile', authenticateToken, async (req, res) => {
+    const { profileId, oldName, newName, oldSmtpFrom, newSmtpFrom, oldHost, newHost, oldUsername, newUsername, oldPassword, newPassword } = req.body;
+
+    if (!newName || !newSmtpFrom || !newHost || !newUsername || !newPassword) {
+        return res.status(400).json({ message: 'All fields are required' });
+    }
+
+    const newHostLowerCase = newHost.toLowerCase(); // Normalize email address to lowercase
+
+    try {
+        const profile = await SendingProfile.findByPk(profileId);
+        if (!profile) {
+            return res.status(404).json({ message: 'Profile not found' });
+        }
+
+        if (oldName === newName && oldSmtpFrom === newSmtpFrom && oldHost === newHostLowerCase && oldUsername === newUsername && oldPassword === newPassword) {
+            res.status(200).json({ message: `No changes made to profile: ${newName}. No update necessary.` });
+        } else if (oldName === newName) {
+            profile.smtpFrom = newSmtpFrom;
+            profile.host = newHostLowerCase;
+            profile.username = newUsername;
+            profile.password = newPassword;
+            await profile.save();
+            res.status(200).json({ message: `Profile updated successfully for "${newName}"` });
+        } else if (oldSmtpFrom === newSmtpFrom && oldHost === newHostLowerCase && oldUsername === newUsername && oldPassword === newPassword) {
+            profile.name = newName;
+            await profile.save();
+            res.status(200).json({ message: `Profile updated successfully from "${oldName}" to "${newName}"` });
+        } else {
+            profile.name = newName;
+            profile.smtpFrom = newSmtpFrom;
+            profile.host = newHostLowerCase;
+            profile.username = newUsername;
+            profile.password = newPassword;
+            await profile.save();
+            res.status(200).json({ message: `Profile updated successfully from "${oldName}" to "${newName}" and its information` });
+        }
+    } catch (err) {
+        console.error('Error updating profile:', err);
+        res.status(500).json({ message: 'An error occurred while updating the profile.' });
     }
 });
 
@@ -500,6 +557,29 @@ app.post('/exitEmployeeFromGroup', authenticateToken, async (req, res) => {
     } catch (error) {
         console.error('Error removing employee from group:', error);
         res.status(500).json({ message: 'An error occurred while removing the employee from the group.' });
+    }
+});
+
+app.get('/getProfiles', async (req, res) => {
+    const search = req.query.search || '';
+    const page = parseInt(req.query.page) || 0;
+    const pageSize = parseInt(req.query.size) || 10;
+    let queryOptions = {
+        where: {
+            [Op.or]: [
+                { name: { [Op.like]: `%${search}%` } }
+            ]
+        },
+        offset: page * pageSize,
+        limit: pageSize,
+    };
+
+    try {
+        const { count, rows } = await SendingProfile.findAndCountAll(queryOptions);
+        res.json({ rows, count });
+    } catch (err) {
+        console.error('Error fetching sending profiles:', err);
+        res.status(500).json({ message: 'An error occurred while fetching the sending profiles.' });
     }
 });
 

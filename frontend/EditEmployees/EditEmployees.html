@@ -589,7 +589,7 @@
                     'Content-Type': 'application/json',
                     'Authorization': `Bearer ${localStorage.getItem('accessToken')}`
                 },
-                body: JSON.stringify({ employeeId, oldFirstName, oldLastName, oldEmail, newFirstName, newLastName, newEmail}),
+                body: JSON.stringify({ employeeId, oldFirstName, oldLastName, oldEmail, newFirstName, newLastName, newEmail }),
                 })
                 .then(response => {
                     if (response.ok) {
