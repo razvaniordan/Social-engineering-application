@@ -134,14 +134,22 @@ const SendingProfile = sequelizeEmployee.define('SendingProfile', {
       type: DataTypes.STRING,
       allowNull: false
   },
-  smtpFrom: {
+  smtpFrom: { // smtpPort
       type: DataTypes.STRING,
       allowNull: false
   },
-  host: {
+  host: { // smtpHost
       type: DataTypes.STRING,
       allowNull: false
   },
+  // smtpHost: {
+  //     type: DataTypes.STRING,
+  //     allowNull: false
+  // },
+  // smtpPort: {
+  //     type: DataTypes.INTEGER,
+  //     allowNull: false
+  // },
   username: {
       type: DataTypes.STRING,
       allowNull: false
@@ -149,9 +157,60 @@ const SendingProfile = sequelizeEmployee.define('SendingProfile', {
   password: {
       type: DataTypes.STRING,
       allowNull: false
+  },
+  secure: DataTypes.BOOLEAN // true for TLS/SSL, false for no encryption
+});
+
+const sequelizeCampaigns = new Sequelize({
+  dialect: 'sqlite',
+  storage: './sqlite/campaignsdatabase.sqlite'
+});
+
+const LandingPage = sequelizeCampaigns.define('LandingPage', {
+  username: {
+      type: DataTypes.STRING,
+      allowNull: false
+  },
+  password: {
+      type: DataTypes.STRING,
+      allowNull: false
+  },
+  sentAt: {
+    type: DataTypes.DATE,
+    allowNull: false,
+    defaultValue: DataTypes.NOW // Automatically set to the current time
+  },
+  token: {
+    type: DataTypes.STRING,
+    allowNull: false,
+  }
+});
+
+const Campaign = sequelizeCampaigns.define('Campaign', {
+  name: {
+      type: DataTypes.STRING,
+      allowNull: false,
+      unique: true
+  },
+  template: {
+      type: DataTypes.STRING,
+      allowNull: false
+  },
+  date: {
+      type: DataTypes.DATE,
+      allowNull: false
+  },
+  profile: {
+      type: DataTypes.STRING,
+      allowNull: false
+  },
+  status: {
+    type: DataTypes.ENUM('Scheduled', 'Sending..', 'Sent', 'Failed'),
+    allowNull: false,
+    defaultValue: 'Scheduled'
   }
 });
 
 
 
-module.exports = { sequelize, User, sequelizeToken, RefreshToken, sequelizeEmployee, Employee, Group, ClickLog, SendingProfile };
+module.exports = { sequelize, User, sequelizeToken, RefreshToken, sequelizeEmployee, Employee, Group, ClickLog, SendingProfile, sequelizeCampaigns, LandingPage, Campaign};

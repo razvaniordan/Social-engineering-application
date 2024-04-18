@@ -2,7 +2,7 @@ require('dotenv').config();
 
 const express = require('express');
 const path = require('path');
-const { User, RefreshToken, Employee, SendingProfile, Group } = require('./models');
+const { User, RefreshToken, Employee, SendingProfile, Group, Campaign } = require('./models');
 const bodyParser = require('body-parser');
 const bcrypt = require('bcryptjs');
 const cors = require('cors');
@@ -13,6 +13,7 @@ const { Op } = require('sequelize');
 const cookieParser = require('cookie-parser');
 const crypto = require('crypto');
 const { group, profile } = require('console');
+const fs = require('fs').promises;
 
 const app = express();
 const port = 3000;
@@ -21,6 +22,8 @@ app.use(cookieParser());
 app.use(express.static(path.join(__dirname, '../frontend')));
 app.use(cors());
 app.use(bodyParser.json());
+const LANDING_PAGES_DIR = path.join(__dirname, '..', 'frontend', 'LandingPages');
+app.use('/landing-pages', express.static(LANDING_PAGES_DIR));
 
 // This and the app.use(express.static()) I use in order to change the path of the html and connect frontend to the backend of the login
 // and the app would run on localhost:3000 
@@ -66,6 +69,82 @@ app.get('/validateToken', authenticateToken, (req, res) => {
     res.json({ message: 'Token is valid' });
 });
 
+const loadEmailTemplates = async () => {
+    // const templatesFilePath = path.join(__dirname, './templates/emailTemplates.json');
+    // console.log(`Loading templates from ${templatesFilePath}`);
+    // return JSON.parse(fs.readFileSync(templatesFilePath, 'utf8'));
+
+    const templatesFilePath = path.join(__dirname, './templates/emailTemplates.json');
+    try {
+        const data = await fs.readFile(templatesFilePath, 'utf8');
+        const templates = JSON.parse(data);
+        return templates;
+    } catch (error) {
+        console.error('Error loading email templates:', error);
+        throw error; // Re-throw the error to handle it further up the call stack
+    }
+};
+
+app.get('/email-templates', async (req, res) => {
+
+    try {
+        const templates = await loadEmailTemplates();
+        res.json(templates);
+    } catch (error) {
+        console.error('Error loading email templates:', error);
+        res.status(500).json({ error: error.message });
+    }
+});
+
+async function getHtmlFiles(dir) {
+    let htmlFiles = [];
+    const items = await fs.readdir(dir, { withFileTypes: true });
+  
+    for (const item of items) {
+        const resPath = path.resolve(dir, item.name);
+        if (item.isDirectory()) {
+            htmlFiles = htmlFiles.concat(await getHtmlFiles(resPath));
+        } else if (item.isFile() && item.name.endsWith('.html')) {
+            const directoryName = path.basename(path.dirname(resPath));
+            htmlFiles.push({
+                path: path.relative(LANDING_PAGES_DIR, resPath),
+                name: directoryName
+            });
+        }
+    }
+    return htmlFiles;
+}
+
+app.get('/landing-pages', async (req, res) => {
+    try {
+        const landingPages = await getHtmlFiles(LANDING_PAGES_DIR);
+        res.json(landingPages);
+    } catch (err) {
+        console.error('Error reading landing pages directory: ', err);
+        res.status(500).send('Internal Server Error');
+    }
+});
+  
+app.get('/sending-profiles', async (req, res) => {
+    try {
+      const profiles = await SendingProfile.findAll();
+      res.json(profiles);
+    } catch (err) {
+      console.error(err);
+      res.status(500).send('Server error');
+    }
+});
+
+app.get('/getGroups', async (req, res) => {
+    try {
+      const groups = await Group.findAll();
+      res.json(groups);
+    } catch (err) {
+      console.error(err);
+      res.status(500).send('Server error');
+    }
+});
+  
 
 // This endpoint checks if the refresh token is valid and if it is, it generates a new access token
 app.post('/token', async (req, res) => {
@@ -393,6 +472,54 @@ app.get('/groupsList', async (req, res) => {
     } catch (err) {
         console.error('Error fetching groups:', err);
         res.status(500).json({ message: 'An error occurred while fetching the groups.' });
+    }
+});
+
+app.post('/addCampaign', authenticateToken, async (req, res) => {
+    let { name, emailTemplateId, landingPageId, launchDate, sendingProfileId, groupIds } = req.body;
+
+    if (!name || !launchDate || !sendingProfileId || !groupIds || groupIds.length === 0) {
+        return res.status(400).json({ message: 'All the fields are required in order to launch a campaign!' });
+    }
+
+    try {
+        console.log('Request body:', req.body);
+        const newCampaign = await Campaign.create({
+            name,
+            template: landingPageId,
+            date: launchDate,
+            profile: sendingProfileId
+        });
+        res.status(200).json({ message: `Campaign launched: ${name}` });
+    } catch (err) {
+        if (err.name === 'SequelizeUniqueConstraintError') {
+            return res.status(409).json({ message: 'A campaign with this name already exists' });
+        }
+        console.error('Error adding campaign:', err);
+        return res.status(500).json({ message: 'An error occurred while adding the campaign.' });
+    }
+});
+
+app.get('/campaignsList', async (req, res) => {
+    const search = req.query.search || '';
+    const page = parseInt(req.query.page) || 0;
+    const pageSize = parseInt(req.query.size) || 10;
+    let queryOptions = {
+        where: {
+            [Op.or]: [
+                { name: { [Op.like]: `%${search}%` } },
+            ]
+        },
+        offset: page * pageSize,
+        limit: pageSize,
+    };
+
+    try {
+        const { count, rows } = await Campaign.findAndCountAll(queryOptions);
+        res.json({ rows, count });
+    } catch (err) {
+        console.error('Error fetching campaigns:', err);
+        res.status(500).json({ message: 'An error occurred while fetching the campaigns.' });
     }
 });
 
