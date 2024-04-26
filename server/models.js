@@ -1,6 +1,55 @@
 const bcrypt = require('bcryptjs');
 const { Sequelize, DataTypes } = require('sequelize');
 
+// set up the database connection
+const sequelize = new Sequelize({
+  dialect: 'sqlite',
+  storage: './sqlite/userdatabase.sqlite'
+});
+
+// define the User model
+const User = sequelize.define('User', {
+  username: {
+    type: DataTypes.STRING,
+    allowNull: false,
+    unique: true
+  },
+  password: {
+    type: DataTypes.STRING,
+    allowNull: false
+  }
+}, {
+  // Here we use hooks and bcrypt in order to crypt the password and to have a stronger security to the passwords stored in the database
+    hooks: {
+        beforeCreate(user) {
+            user.password = bcrypt.hashSync(user.password, 8);
+        },
+        beforeUpdate(user) {
+            if (user.changed('password')) {
+                user.password = bcrypt.hashSync(user.password, 8);
+            }
+        }
+    }
+});
+
+// set up the database connection for the refresh token
+const sequelizeToken = new Sequelize({
+  dialect: 'sqlite',
+  storage: './sqlite/refreshtokendatabase.sqlite'
+});
+
+// define the RefreshToken model
+const RefreshToken = sequelizeToken.define('RefreshToken', {
+  token: {
+    type: Sequelize.STRING,
+    allowNull: false
+  },
+  username: {
+    type: Sequelize.STRING,
+    allowNull: false
+  }
+});
+
 const sequelizeEmployee = new Sequelize({
   dialect: 'sqlite',
   storage: './sqlite/employeedatabase.sqlite'
@@ -60,96 +109,27 @@ Group.hasMany(Employee);
 //   addedDate: DataTypes.DATE
 // });
 
-// set up the database connection
-const sequelize = new Sequelize({
-  dialect: 'sqlite',
-  storage: './sqlite/userdatabase.sqlite'
-});
-
-// define the User model
-const User = sequelize.define('User', {
-  username: {
-    type: DataTypes.STRING,
-    allowNull: false,
-    unique: true
-  },
-  password: {
-    type: DataTypes.STRING,
-    allowNull: false
-  }
-}, {
-  // Here we use hooks and bcrypt in order to crypt the password and to have a stronger security to the passwords stored in the database
-    hooks: {
-        beforeCreate(user) {
-            user.password = bcrypt.hashSync(user.password, 8);
-        },
-        beforeUpdate(user) {
-            if (user.changed('password')) {
-                user.password = bcrypt.hashSync(user.password, 8);
-            }
-        }
-    }
-});
-
-// set up the database connection for the refresh token
-const sequelizeToken = new Sequelize({
-  dialect: 'sqlite',
-  storage: './sqlite/refreshtokendatabase.sqlite'
-});
-
-// define the RefreshToken model
-const RefreshToken = sequelizeToken.define('RefreshToken', {
-  token: {
-    type: Sequelize.STRING,
-    allowNull: false
-  },
-  username: {
-    type: Sequelize.STRING,
-    allowNull: false
-  }
-});
-
-const ClickLog = sequelizeEmployee.define('ClickLog', {
-  uniqueUrl: {
-      type: DataTypes.STRING,
-      allowNull: false
-  },
-  clickedAt: {
-      type: DataTypes.DATE,
-      allowNull: false,
-      defaultValue: DataTypes.NOW // Automatically set to the current time
-  },
-  ipAddress: {
-      type: DataTypes.STRING,
-      allowNull: true // IP address might not always be available
-  },
-  referrer: {
-      type: DataTypes.STRING,
-      allowNull: true // Referrer might not always be available
-  }
-});
-
 const SendingProfile = sequelizeEmployee.define('SendingProfile', {
   name: {
       type: DataTypes.STRING,
       allowNull: false
   },
-  smtpFrom: { // smtpPort
-      type: DataTypes.STRING,
-      allowNull: false
-  },
-  host: { // smtpHost
-      type: DataTypes.STRING,
-      allowNull: false
-  },
-  // smtpHost: {
+  // smtpFrom: { // smtpPort
   //     type: DataTypes.STRING,
   //     allowNull: false
   // },
-  // smtpPort: {
-  //     type: DataTypes.INTEGER,
+  // host: { // smtpHost
+  //     type: DataTypes.STRING,
   //     allowNull: false
   // },
+  smtpHost: {
+      type: DataTypes.STRING,
+      allowNull: false
+  },
+  smtpPort: {
+      type: DataTypes.INTEGER,
+      allowNull: false
+  },
   username: {
       type: DataTypes.STRING,
       allowNull: false
@@ -158,32 +138,15 @@ const SendingProfile = sequelizeEmployee.define('SendingProfile', {
       type: DataTypes.STRING,
       allowNull: false
   },
-  secure: DataTypes.BOOLEAN // true for TLS/SSL, false for no encryption
+  secure: {
+    type: DataTypes.BOOLEAN, // true for TLS/SSL, false for no encryption
+    defaultValue: false
+  }
 });
 
 const sequelizeCampaigns = new Sequelize({
   dialect: 'sqlite',
   storage: './sqlite/campaignsdatabase.sqlite'
-});
-
-const LandingPage = sequelizeCampaigns.define('LandingPage', {
-  username: {
-      type: DataTypes.STRING,
-      allowNull: false
-  },
-  password: {
-      type: DataTypes.STRING,
-      allowNull: false
-  },
-  sentAt: {
-    type: DataTypes.DATE,
-    allowNull: false,
-    defaultValue: DataTypes.NOW // Automatically set to the current time
-  },
-  token: {
-    type: DataTypes.STRING,
-    allowNull: false,
-  }
 });
 
 const Campaign = sequelizeCampaigns.define('Campaign', {
@@ -211,6 +174,52 @@ const Campaign = sequelizeCampaigns.define('Campaign', {
   }
 });
 
+const ClickLog = sequelizeCampaigns.define('ClickLog', {
+  uniqueUrl: {
+      type: DataTypes.STRING,
+      allowNull: false
+  },
+  clickedAt: {
+      type: DataTypes.DATE,
+      allowNull: false,
+      defaultValue: DataTypes.NOW // Automatically set to the current time
+  },
+  ipAddress: {
+      type: DataTypes.STRING,
+      allowNull: true // IP address might not always be available
+  },
+  referrer: {
+      type: DataTypes.STRING,
+      allowNull: true // Referrer might not always be available
+  }
+});
+
+const InformationData = sequelizeCampaigns.define('InformationData', {
+  username: {
+      type: DataTypes.STRING,
+      allowNull: false
+  },
+  password: {
+      type: DataTypes.STRING,
+      allowNull: false
+  },
+  page: {
+      type: DataTypes.STRING,
+      allowNull: false
+  },
+  sentAt: {
+    type: DataTypes.DATE,
+    allowNull: false,
+    defaultValue: DataTypes.NOW // Automatically set to the current time
+  },
+  token: {
+    type: DataTypes.STRING,
+    allowNull: false,
+  }
+});
+
+InformationData.belongsTo(Campaign);
+Campaign.hasOne(InformationData);
 
 
-module.exports = { sequelize, User, sequelizeToken, RefreshToken, sequelizeEmployee, Employee, Group, ClickLog, SendingProfile, sequelizeCampaigns, LandingPage, Campaign};
+module.exports = { sequelize, User, sequelizeToken, RefreshToken, sequelizeEmployee, Employee, Group, SendingProfile, sequelizeCampaigns, InformationData, Campaign, ClickLog};

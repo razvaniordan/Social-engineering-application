@@ -14,12 +14,16 @@ const cookieParser = require('cookie-parser');
 const crypto = require('crypto');
 const { group, profile } = require('console');
 const fs = require('fs').promises;
+const nodemailer = require('nodemailer');
+
+const sendEmailQueue = require('./emailWorkers');
 
 const app = express();
 const port = 3000;
 
 app.use(cookieParser());
-app.use(express.static(path.join(__dirname, '../frontend')));
+app.use(express.static(path.join(__dirname, '../frontend/')));
+
 app.use(cors());
 app.use(bodyParser.json());
 const LANDING_PAGES_DIR = path.join(__dirname, '..', 'frontend', 'LandingPages');
@@ -475,6 +479,18 @@ app.get('/groupsList', async (req, res) => {
     }
 });
 
+function formatDateToRomanian() {
+    const date = new Date();
+    const day = date.getDate();
+
+    const months = ["ianuarie", "februarie", "martie", "aprilie", "mai", "iunie",
+                    "iulie", "august", "septembrie", "octombrie", "noiembrie", "decembrie"];
+    const month = months[date.getMonth()]; // getMonth() returns 0 for January, 1 for February, etc.
+
+    return `${day} ${month}`;
+}
+
+
 app.post('/addCampaign', authenticateToken, async (req, res) => {
     let { name, emailTemplateId, landingPageId, launchDate, sendingProfileId, groupIds } = req.body;
 
@@ -490,6 +506,41 @@ app.post('/addCampaign', authenticateToken, async (req, res) => {
             date: launchDate,
             profile: sendingProfileId
         });
+
+        const emailTemplates = await loadEmailTemplates();
+        const emailTemplate = emailTemplates.find(t => t.id === emailTemplateId);
+
+        if(!emailTemplate) {
+            throw new Error('Email template not found');
+        }
+
+        // Fetch the email template and groups
+        const groups = await Group.findAll({
+            where: { id: groupIds },
+            include: { model: Employee, as: 'Employees' }
+        });
+
+        // Queue emails for each user in the selected groups
+        groups.forEach(group => {
+            group.Employees.forEach(employee => {
+                const personalizedLink = `http://localhost:4000/${landingPageId}/${employee.token}`;
+                const ziua = formatDateToRomanian();
+                console.log('initial template: ', emailTemplate.content);
+                let personalizedHtmlContent = emailTemplate.content.replace('{{link}}', personalizedLink);
+                personalizedHtmlContent = personalizedHtmlContent.replace('{{dataxdatayzi}}', ziua);
+                personalizedHtmlContent = personalizedHtmlContent.replace('{{email.user}}', employee.email);
+                console.log('personalized content: ', personalizedHtmlContent);
+
+                // Add job to the email sending queue
+                sendEmailQueue.add({
+                    email: employee.email,
+                    subject: emailTemplate.subject,
+                    content: personalizedHtmlContent,
+                    profileId: sendingProfileId
+                });
+            });
+        });
+
         res.status(200).json({ message: `Campaign launched: ${name}` });
     } catch (err) {
         if (err.name === 'SequelizeUniqueConstraintError') {
@@ -498,6 +549,7 @@ app.post('/addCampaign', authenticateToken, async (req, res) => {
         console.error('Error adding campaign:', err);
         return res.status(500).json({ message: 'An error occurred while adding the campaign.' });
     }
+
 });
 
 app.get('/campaignsList', async (req, res) => {
@@ -595,13 +647,11 @@ app.put('/updateEmployee', authenticateToken, async (req, res) => {
 });
 
 app.put('/updateProfile', authenticateToken, async (req, res) => {
-    const { profileId, oldName, newName, oldSmtpFrom, newSmtpFrom, oldHost, newHost, oldUsername, newUsername, oldPassword, newPassword } = req.body;
+    const { profileId, oldName, newName, oldHost, newHost, oldPort, newPort, oldUsername, newUsername, oldPassword, newPassword } = req.body;
 
-    if (!newName || !newSmtpFrom || !newHost || !newUsername || !newPassword) {
+    if (!newName || !newHost || !newPort || !newUsername || !newPassword) {
         return res.status(400).json({ message: 'All fields are required' });
     }
-
-    const newHostLowerCase = newHost.toLowerCase(); // Normalize email address to lowercase
 
     try {
         const profile = await SendingProfile.findByPk(profileId);
@@ -609,23 +659,23 @@ app.put('/updateProfile', authenticateToken, async (req, res) => {
             return res.status(404).json({ message: 'Profile not found' });
         }
 
-        if (oldName === newName && oldSmtpFrom === newSmtpFrom && oldHost === newHostLowerCase && oldUsername === newUsername && oldPassword === newPassword) {
+        if (oldName === newName && oldHost === newHost && oldPort === newPort && oldUsername === newUsername && oldPassword === newPassword) {
             res.status(200).json({ message: `No changes made to profile: ${newName}. No update necessary.` });
         } else if (oldName === newName) {
-            profile.smtpFrom = newSmtpFrom;
-            profile.host = newHostLowerCase;
+            profile.smtpHost = newHost;
+            profile.smtpPort = newPort;
             profile.username = newUsername;
             profile.password = newPassword;
             await profile.save();
             res.status(200).json({ message: `Profile updated successfully for "${newName}"` });
-        } else if (oldSmtpFrom === newSmtpFrom && oldHost === newHostLowerCase && oldUsername === newUsername && oldPassword === newPassword) {
+        } else if (oldHost === newHost && oldPort === newPort && oldUsername === newUsername && oldPassword === newPassword) {
             profile.name = newName;
             await profile.save();
             res.status(200).json({ message: `Profile updated successfully from "${oldName}" to "${newName}"` });
         } else {
             profile.name = newName;
-            profile.smtpFrom = newSmtpFrom;
-            profile.host = newHostLowerCase;
+            profile.smtpHost = newHost;
+            profile.smtpPort = newPort;
             profile.username = newUsername;
             profile.password = newPassword;
             await profile.save();
@@ -711,14 +761,14 @@ app.get('/getProfiles', async (req, res) => {
 });
 
 app.post('/addSendingProfile', authenticateToken, async (req, res) => {
-    const { name, smtpFrom, host, username, password } = req.body;
+    const { name, smtpHost, smtpPort, username, password } = req.body;
 
-    if (!name || !smtpFrom || !host || !username || !password) {
+    if (!name || !smtpHost || !smtpPort || !username || !password) {
         return res.status(400).json({ message: 'All fields are required!' });
     }
 
     try {
-        await SendingProfile.create({ name, smtpFrom, host, username, password });
+        await SendingProfile.create({ name, smtpHost, smtpPort, username, password });
         res.status(200).json({ message: `Sending profile added: ${name}` });
     } catch (err) {
         if (err.name === 'SequelizeUniqueConstraintError') {
@@ -728,6 +778,7 @@ app.post('/addSendingProfile', authenticateToken, async (req, res) => {
         return res.status(500).json({ message: 'An error occurred while adding the sending profile.' });
     }
 });
+
 
 //use this when we want to process the requests
 app.use( (req,res,next) => {//this a custom middleware function and has next()

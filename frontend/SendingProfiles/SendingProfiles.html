@@ -38,14 +38,14 @@
                                 <input type="text" id="modalProfileInterfaceType" class="form-control" placeholder="SMTP" value="SMTP" readonly style="color: grey; background-color: #e9ecef;">
                             </div>
                             <div class="form-group">
-                                <label for="modalSmtpFrom">SMTP From</label>
-                                <input type="text" id="modalSmtpFrom" class="form-control" placeholder="Name &lt;test@example.com&gt;">
+                                <label for="modalHost">Host</label>
+                                <input type="text" id="modalHost" class="form-control" placeholder='ex.: "smtp.gmail.com" or "smtp-mail.outlook.com"'>
                                 <!-- &lt; and &gt; are HTML entities for "<" and ">" because < and > may be interpreted as part of an HTML tag, 
                                     which could lead to rendering issues or unintended behavior.-->
                             </div>
                             <div class="form-group">
-                                <label for="modalHost">Host</label>
-                                <input type="text" id="modalHost" class="form-control" placeholder="smtp.example.com:25">
+                                <label for="modalPort">Port</label>
+                                <input type="text" id="modalPort" class="form-control" placeholder='(example: "587")'>
                             </div>
                             <div class="form-group">
                                 <label for="modalUsername">Username</label>
@@ -84,16 +84,16 @@
                                 <input type="hidden" id="originalProfileName">
                             </div>
                             <div class="form-group">
-                                <label for="editModalSmtpFrom">SMTP From</label>
-                                <input type="text" id="editModalSmtpFrom" class="form-control" placeholder="Name &lt;test@example.com&gt;">  
+                                <label for="editModalHost">Host</label>
+                                <input type="text" id="editModalHost" class="form-control" placeholder="Name &lt;test@example.com&gt;">  
                                 <!-- &lt; and &gt; are HTML entities for "<" and ">" because < and > may be interpreted as part of an HTML tag, 
                                     which could lead to rendering issues or unintended behavior.-->
-                                <input type="hidden" id="originalSmtpFrom">
+                                <input type="hidden" id="originalHost">
                             </div>
                             <div class="form-group">
-                                <label for="editModalHost">Host</label>
-                                <input type="text" id="editModalHost" class="form-control" placeholder="smtp.example.com:25">
-                                <input type="hidden" id="originalHost">
+                                <label for="editModalPort">Port</label>
+                                <input type="text" id="editModalPort" class="form-control" placeholder=' (example: "587") '>
+                                <input type="hidden" id="originalPort">
                             </div>
                             <div class="form-group">
                                 <label for="editModalUsername">Username</label>
@@ -351,13 +351,13 @@
             }
 
             document.getElementById('editModalProfileName').value = profile.name;
-            document.getElementById('editModalSmtpFrom').value = profile.smtpFrom;
-            document.getElementById('editModalHost').value = profile.host;
+            document.getElementById('editModalHost').value = profile.smtpHost;
+            document.getElementById('editModalPort').value = profile.smtpPort;
             document.getElementById('editModalUsername').value = profile.username;
             document.getElementById('editModalPassword').value = profile.password;
             document.getElementById('originalProfileName').value = profile.name;
-            document.getElementById('originalSmtpFrom').value = profile.smtpFrom;
-            document.getElementById('originalHost').value = profile.host;
+            document.getElementById('originalHost').value = profile.smtpHost;
+            document.getElementById('originalPort').value = profile.smtpPort;
             document.getElementById('originalUsername').value = profile.username;
             document.getElementById('originalPassword').value = profile.password;
             document.getElementById('originalProfileId').value = profile.id;
@@ -369,26 +369,15 @@
         function saveProfileChanges() {
             const profileId = document.getElementById('originalProfileId').value;
             const oldName = document.getElementById('originalProfileName').value;
-            const oldSmtpFrom = document.getElementById('originalSmtpFrom').value;
             const oldHost = document.getElementById('originalHost').value;
+            const oldPort = document.getElementById('originalPort').value;
             const oldUsername = document.getElementById('originalUsername').value;
             const oldPassword = document.getElementById('originalPassword').value;
             const newName = document.getElementById('editModalProfileName').value;
-            const newSmtpFrom = document.getElementById('editModalSmtpFrom').value;
             const newHost = document.getElementById('editModalHost').value;
+            const newPort = document.getElementById('editModalPort').value;
             const newUsername = document.getElementById('editModalUsername').value;
             const newPassword = document.getElementById('editModalPassword').value;
-
-            const hostRegex = /^(smtp\.[a-zA-Z0-9-]+\.[a-zA-Z]{2,6}):(\d{1,5})$/;
-            if (!hostRegex.test(newHost)) {
-                showMessage('Invalid host format. Please use the format "smtp.example.com:25"', 'danger');
-                var modalElement = document.getElementById('editProfileModal');
-                var modalInstance = bootstrap.Modal.getInstance(modalElement);
-                if (modalInstance) {
-                    modalInstance.hide();
-                }
-                return;
-            }
 
             const attemptEditProfile = (token) => {
                 fetch('/updateProfile', {
@@ -397,7 +386,7 @@
                     'Content-Type': 'application/json',
                     'Authorization': `Bearer ${localStorage.getItem('accessToken')}`
                 },
-                body: JSON.stringify({ profileId, oldName, oldSmtpFrom, oldHost, oldUsername, oldPassword, newName, newSmtpFrom, newHost, newUsername, newPassword }),
+                body: JSON.stringify({ profileId, oldName, oldHost, oldPort, oldUsername, oldPassword, newName, newHost, newPort, newUsername, newPassword }),
                 })
                 .then(response => {
                     if (response.ok) {
@@ -439,6 +428,15 @@
 
         document.getElementById('showPasswordCheckbox').addEventListener('change', function () {
             const passwordInput = document.getElementById('modalPassword');
+            if (this.checked) {
+                passwordInput.type = 'text';
+            } else {
+                passwordInput.type = 'password';
+            }
+        });
+
+        document.getElementById('editShowPasswordCheckbox').addEventListener('change', function () {
+            const passwordInput = document.getElementById('editModalPassword');
             if (this.checked) {
                 passwordInput.type = 'text';
             } else {
@@ -502,22 +500,10 @@
 
         function addProfile() {
             const name = document.getElementById('modalProfileName').value;
-            const smtpFrom = document.getElementById('modalSmtpFrom').value;
-            const host = document.getElementById('modalHost').value;
+            const smtpHost = document.getElementById('modalHost').value;
+            const smtpPort = document.getElementById('modalPort').value;
             const username = document.getElementById('modalUsername').value;
             const password = document.getElementById('modalPassword').value;
-
-            const hostRegex = /^(smtp\.[a-zA-Z0-9-]+\.[a-zA-Z]{2,6}):(\d{1,5})$/;
-
-            if (!hostRegex.test(host)) {
-                showMessage('Invalid host format. Please use the format "smtp.example.com:25"', 'danger');
-                var modalElement = document.getElementById('addProfileModal');
-                var modalInstance = bootstrap.Modal.getInstance(modalElement);
-                if (modalInstance) {
-                    modalInstance.hide();
-                }
-                return;
-            }
 
             const sendAddProfileRequest = (token) => {
                 fetch('/addSendingProfile', {
@@ -526,7 +512,7 @@
                         'Content-Type': 'application/json',
                         'Authorization': `Bearer ${token}`
                     },
-                    body: JSON.stringify({ name, smtpFrom, host, username, password }),
+                    body: JSON.stringify({ name, smtpHost, smtpPort, username, password }),
                 })
                 .then(response => {
                     if (response.ok) {
@@ -549,6 +535,11 @@
                         if (modalInstance) {
                             modalInstance.hide();
                         }
+                        document.getElementById('modalProfileName').value = '';
+                        document.getElementById('modalHost').value = '';
+                        document.getElementById('modalPort').value = '';
+                        document.getElementById('modalUsername').value = '';
+                        document.getElementById('modalPassword').value = '';
                         fetchProfiles();
                     }
 
