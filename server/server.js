@@ -500,11 +500,12 @@ app.post('/addCampaign', authenticateToken, async (req, res) => {
 
     try {
         console.log('Request body:', req.body);
+        sendingProfile = await SendingProfile.findByPk(sendingProfileId);
         const newCampaign = await Campaign.create({
             name,
             template: landingPageId,
             date: launchDate,
-            profile: sendingProfileId
+            profile: sendingProfile.name
         });
 
         const emailTemplates = await loadEmailTemplates();
@@ -523,25 +524,30 @@ app.post('/addCampaign', authenticateToken, async (req, res) => {
         // Queue emails for each user in the selected groups
         groups.forEach(group => {
             group.Employees.forEach(employee => {
-                const personalizedLink = `http://localhost:4000/${landingPageId}/${employee.token}`;
+                const personalizedLink = `http://localhost:4000/${landingPageId}/${newCampaign.id}/${employee.token}`;
                 const ziua = formatDateToRomanian();
                 console.log('initial template: ', emailTemplate.content);
                 let personalizedHtmlContent = emailTemplate.content.replace('{{link}}', personalizedLink);
                 personalizedHtmlContent = personalizedHtmlContent.replace('{{dataxdatayzi}}', ziua);
                 personalizedHtmlContent = personalizedHtmlContent.replace('{{email.user}}', employee.email);
-                console.log('personalized content: ', personalizedHtmlContent);
 
-                // Add job to the email sending queue
-                sendEmailQueue.add({
-                    email: employee.email,
-                    subject: emailTemplate.subject,
-                    content: personalizedHtmlContent,
-                    profileId: sendingProfileId
-                });
+                // Schedule the email for the launch date
+                const delay = new Date(launchDate) - new Date(); // Delay in ms
+                if (delay > 0) {
+                    // Add job to the email sending queue
+                    sendEmailQueue.add({
+                        email: employee.email,
+                        subject: emailTemplate.subject,
+                        content: personalizedHtmlContent,
+                        profileId: sendingProfileId,
+                        campaignId: newCampaign.id
+                    }, { delay });
+                }
+                
             });
         });
 
-        res.status(200).json({ message: `Campaign launched: ${name}` });
+        res.status(200).json({ message: `Campaign scheduled successfully: ${name}` });
     } catch (err) {
         if (err.name === 'SequelizeUniqueConstraintError') {
             return res.status(409).json({ message: 'A campaign with this name already exists' });

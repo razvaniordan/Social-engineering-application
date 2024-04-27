@@ -251,6 +251,8 @@
                 // populate table rows
                 campaigns.forEach(campaign => {
                     const row = document.createElement('tr');
+                    row.setAttribute('data-campaign-id', campaign.id);
+                    const statusClass = getStatusClass(campaign.status);
 
                     const date = new Date(campaign.date);
 
@@ -268,7 +270,7 @@
                         <td>${campaign.template}</td>
                         <td>${readableDate}</td>
                         <td>${campaign.profile}</td>
-                        <td>${campaign.status}</td>
+                        <td class="${statusClass}">${campaign.status}</td>
                         <td>
                             <button onclick="nothing('${campaign.name}', event)" class="btn btn-info btn-sm">View</button>
                         </td>
@@ -280,6 +282,16 @@
                 listContainer.appendChild(table);
             } else {
                 listContainer.textContent = 'No campaigns found.';
+            }
+        }
+
+        function getStatusClass(status){
+            switch(status){
+                case 'Sent': return 'status-sent';
+                case 'Failed': return 'status-failed';
+                case 'Sending..': return 'status-sending';
+                case 'Scheduled': return 'status-scheduled';
+                default: return '';
             }
         }
 
@@ -320,7 +332,7 @@
                 })
                 .then(data => {
                     showMessage(data.message, 'danger');
-                    if (data.message.includes('Campaign launched')) {
+                    if (data.message.includes('Campaign scheduled successfully')) {
                         messageDisplay.className = 'alert alert-success';
                         document.getElementById('modalCampaignName').value = '';
                         document.getElementById('modalEmailTemplate').value = '';
@@ -359,6 +371,27 @@
             return selectedOptions.map(option => option.value);
         }
 
+        function updateCampaignStatusOnUI(campaigns) {
+            campaigns.forEach(campaign => {
+                const row = document.querySelector(`tr[data-campaign-id="${campaign.id}"]`);
+                console.log(row);
+                if (row) {
+                    // Get all cells in the row
+                    const statusCells = row.querySelectorAll('.status-sent, .status-failed, .status-sending, .status-scheduled');
+                    console.log(statusCells);
+                    // Update text content for each status cell
+                    statusCells.forEach(statusCell => {
+                        console.log(statusCell);
+                        statusCell.textContent = campaign.status; // Update the text content with the latest status
+                        statusCell.className = getStatusClass(campaign.status); // Update the class name based on the status
+                        console.log(statusCell);
+                        // No need to update class name since it's dynamic
+                    });
+                } else {
+                    console.error(`Row not found for campaign ${campaign.id}`);
+                }
+            });
+        }
 
         document.addEventListener('DOMContentLoaded', function() {
             var groupSelectElement = document.getElementById('modalGroups');
@@ -397,6 +430,21 @@
             // Attach the event listener for modal show event
             const newCampaignModal = new bootstrap.Modal(document.getElementById('newCampaignModal'));
             document.getElementById('newCampaignModal').addEventListener('show.bs.modal', populateFormDropdowns);
+
+            // Example of polling setup in your JavaScript front-end
+            setInterval(async () => {
+                const campaigns = await fetch(`/campaignsList?page=${currentPage}&size=${pageSize}&search=${encodeURIComponent(searchInput.value)}`, {
+                    headers: {
+                        'Authorization': `Bearer ${localStorage.getItem('accessToken')}`
+                    }
+                })
+                .then(response => response.json()).catch(err => console.error('Error fetching campaigns:', err));
+
+                if (campaigns && campaigns.rows) {
+                    updateCampaignStatusOnUI(campaigns.rows);
+                }
+            
+            }, 5000);  // Every 5 seconds
         });
 
 

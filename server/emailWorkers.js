@@ -1,16 +1,19 @@
 const Queue = require('bull');
 const sendEmail = require('./emailUtils'); 
+const { Campaign } = require('./models');
 
 const sendEmailQueue = new Queue('sendEmail', 'redis://127.0.0.1:6379');
 
 sendEmailQueue.process(async (job, done) => {
-    const { email, subject, content, profileId } = job.data;
+    const { email, subject, content, profileId, campaignId } = job.data;
+
     try {
-        console.log("profile ID: ", profileId)
-        await sendEmail(email, subject, content, profileId);
+        await Campaign.update({ status: 'Sending..' }, { where: { id: campaignId } });
+        await sendEmail(email, subject, content, profileId, campaignId);
         done();
     } catch (error) {
         console.error('Failed to send email: ', error);
+        await Campaign.update({ status: 'Failed' }, { where: { id: campaignId } });
         done(new Error('Failed to send email'));
     }
 });

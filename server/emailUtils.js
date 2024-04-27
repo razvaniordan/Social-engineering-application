@@ -1,11 +1,11 @@
-const { SendingProfile } = require('./models');
+const { SendingProfile, Campaign } = require('./models');
 const nodemailer = require('nodemailer');
 
 async function getSendingProfile(profileId) {
     return await SendingProfile.findByPk(profileId);
 }
 
-async function sendEmail(recipient, subject, content, sendingProfileId) {
+async function sendEmail(recipient, subject, content, sendingProfileId, campaignId) {
     const profile = await getSendingProfile(sendingProfileId);
     console.log('Sending email using profile: ', profile);
     console.log('Host: ', profile.smtpHost);
@@ -37,9 +37,11 @@ async function sendEmail(recipient, subject, content, sendingProfileId) {
     try {
         await transporter.sendMail(mailOptions);
         console.log('Email sent successfully');
+        await Campaign.update({ status: 'Sent' }, { where: { id: campaignId } });
     } catch (error) {
         console.error('Failed to send email: ', error);
         console.log('Email failed to send');
+        await Campaign.update({ status: 'Failed' }, { where: { id: campaignId } });
     }
 }
 

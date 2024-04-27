@@ -17,14 +17,15 @@ app.get('/', (req, res) => {
 
 app.post('/submit_information', async (req, res) => {
     try {
-        const { username, password, token, page } = req.body;
+        const { username, password, token, page, campaignId } = req.body;
         console.log(req.body);
         
         await InformationData.create({
             username: username,
             password: password,
             page: page,
-            token: token
+            token: token,
+            CampaignId: campaignId
         });
         res.status(200).json({ success: true });
     } catch (error) {
@@ -33,8 +34,8 @@ app.post('/submit_information', async (req, res) => {
     }
 });
 
-app.get('/:landingPage/:uniqueUrl', async (req, res) => {
-    const { landingPage, uniqueUrl } = req.params;
+app.get('/:landingPage/:campaignId/:uniqueUrl', async (req, res) => {
+    const { landingPage, campaignId, uniqueUrl } = req.params;
 
     // Store the click information in the database
     try {
@@ -47,6 +48,7 @@ app.get('/:landingPage/:uniqueUrl', async (req, res) => {
         if (employee) {
             await ClickLog.create({
                 uniqueUrl: uniqueUrl,
+                CampaignId: campaignId,
                 ipAddress: req.ip, // Express's req.ip captures the requester's IP address
                 referrer: req.get('Referrer') // The page from which the link was clicked
             });
