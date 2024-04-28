@@ -18,7 +18,7 @@
         <form action="">
             
             <h1>
-                Send emails
+                Campaigns
                 <button id="btnHome" type="button" class="btn btn-light" onclick="home()">Home</button>
             </h1>
             <button type="button" class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#newCampaignModal">
@@ -272,7 +272,7 @@
                         <td>${campaign.profile}</td>
                         <td class="${statusClass}">${campaign.status}</td>
                         <td>
-                            <button onclick="nothing('${campaign.name}', event)" class="btn btn-info btn-sm">View</button>
+                            <button onclick="viewLogs('${campaign.id}')" class="btn btn-info btn-sm">View</button>
                         </td>
                     `;
                     tbody.appendChild(row);
@@ -283,6 +283,11 @@
             } else {
                 listContainer.textContent = 'No campaigns found.';
             }
+        }
+
+        function viewLogs(campaignId) {
+            event.preventDefault();
+            window.location.href = `/campaignLogs?campaignId=${campaignId}`;
         }
 
         function getStatusClass(status){

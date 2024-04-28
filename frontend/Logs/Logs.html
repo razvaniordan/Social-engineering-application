@@ -1,0 +1,343 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Campaign logs</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet" integrity="sha384-QWTKZyjpPEjISv5WaRU9OFeRpok6YctnYmDr5pNlyT2bRjXh0JMhjY6hW+ALEwIH" crossorigin="anonymous">
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js" integrity="sha384-YvpcrYf0tY3lHB60NNkmXc5s9fDVZLESaAA55NDzOxhy9GkcIdslK1eN7N6jIeHz" crossorigin="anonymous"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Roboto:wght@400;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/choices.js/public/assets/styles/choices.min.css" />
+    <script src="https://cdn.jsdelivr.net/npm/choices.js/public/assets/scripts/choices.min.js"></script>
+
+    <link rel="stylesheet" href="/Logs/Logs.css">
+</head>
+<body>
+
+    <div class="wrapper">
+        <form action="">
+            
+            <h1>
+                Campaign logs
+                <div class="button-container justify-content-end">
+                    <button id="btnBack" type="button" class="btn btn-light" onclick="back()">Back</button>
+                    <button id="btnHome" type="button" class="btn btn-light" onclick="home()">Home</button>
+                </div>
+            </h1>
+
+            <div id="messageDisplay" class="alert" style="display: none;"></div>
+
+            <input type="text" id="searchLog" class="form-control" placeholder="Search employee by name">
+
+            <div id="paginationControls">
+                <button onclick="changePage(-1, event)" class="btn btn-secondary">Previous</button>
+                <span id="pageIndicator"></span>
+                <button onclick="changePage(1, event)" class="btn btn-secondary">Next</button>
+            </div>
+
+            <div class="modal fade" id="credentialsModal" tabindex="-1" aria-labelledby="credentialsModalLabel" aria-hidden="true">
+                <div class="modal-dialog modal-lg">
+                    <div class="modal-content">
+                        <div class="modal-header">
+                            <h5 class="modal-title" id="credentialsModalLabel">Credentials Details</h5>
+                            <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                        </div>
+                        <div class="modal-body">
+                            <table id="credentialListModal" class="table table-bordered">
+                                <thead>
+                                    <tr>
+                                        <th scope="col">Username</th>
+                                        <th scope="col">Password</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    <!-- Credentials will be dynamically inserted here -->
+                                    <tr>
+                                        <td id="username"></td>
+                                        <td id="password"></td>
+                                    </tr>
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div id="logsList" class="list-group mt-3"></div>
+
+        </form>
+
+    </div>
+
+    <script>
+
+        let currentPage = 0; // Current page index
+        let totalLogs = 0; // Total number of campaigns
+        const pageSize = 10; // Campaigns per page
+        
+        let globalLogs = [];
+        const listContainer = document.getElementById('logsList');
+        const searchInput = document.getElementById('searchLog');
+
+        function home() {
+           window.location.href = '/home';
+        }
+
+        function back() {
+        window.location.href = '/send';
+    }
+
+        document.getElementById('searchLog').addEventListener('input', debouncedLoadLogs);
+
+        document.addEventListener('DOMContentLoaded', () => {
+
+            refreshToken().then(() => {
+                // After successfully refreshing the token, display the content and load data:
+                document.querySelector('.wrapper').style.display = 'block';
+            }).catch(() => {
+                // If the token refresh fails, redirect to the login page:
+                logout(true);
+            });
+        });
+
+        function showMessage(message, type) {
+            const messageDisplay = document.getElementById('messageDisplay');
+            console.log(messageDisplay);
+            messageDisplay.textContent = message; // Set the text of the message display area
+            messageDisplay.style.display = 'block'; // Make the message display area visible
+            messageDisplay.className = `alert alert-${type}`;
+        }
+
+        function changePage(direction) {
+            event.preventDefault();
+            const newPage = currentPage + direction;
+            // Check new page is within range
+            if (newPage < 0 || newPage * pageSize >= totalLogs) return;
+            currentPage = newPage;
+            fetchLogs();
+        }
+
+        function updatePageIndicator(total, currentPage, pageSize) {
+            document.getElementById('pageIndicator').textContent = `Page ${currentPage + 1} of ${Math.ceil(total / pageSize)}`;
+        }
+
+        let debounceTimeout;
+        const debounceDelay = 300; // milliseconds
+
+        function debouncedLoadLogs() {
+            clearTimeout(debounceTimeout);
+            debounceTimeout = setTimeout(() => {
+                currentPage = 0; // Reset to first page when searching
+                fetchLogs();
+            }, debounceDelay);
+        }
+
+        function refreshToken() {
+            return fetch('/token', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json'
+                }
+            })
+            .then(response => {
+                if (!response.ok) {
+                    throw new Error(`HTTTP status ${response.status}`);
+                }
+                return response.json();
+            })
+            .then(data => {
+                localStorage.setItem('accessToken', data.accessToken); // Update the stored access token
+                return data.accessToken;
+            });
+        }
+
+        function handleResponse(response) {
+            if (response.ok) return response.json();
+            if (response.status === 401) {
+                // Unauthorized, attempt to refresh the token
+                return refreshToken().then(() => {
+                    // After refresh, retry the original request
+                    return fetch(response.url, {
+                        headers: {
+                            'Authorization': `Bearer ${localStorage.getItem('accessToken')}`
+                        }
+                    }).then(res => {
+                        if (res.ok) return res.json();
+                        throw new Error('Failed to fetch after token refresh');
+                    });
+                });
+            }
+            throw new Error('Network response was not ok.');
+        }
+
+        function fetchLogs() {
+            const campaignId = new URLSearchParams(window.location.search).get('campaignId');
+            const employeeName = document.getElementById('searchLog').value;
+            
+            const query = `?campaignId=${campaignId}&page=${currentPage}&size=${pageSize}&employeeName=${encodeURIComponent(employeeName)}`;
+            const fetchOptions = {
+                headers: {
+                    'Authorization': `Bearer ${localStorage.getItem('accessToken')}`
+                }
+            };
+
+            fetch(`/logsList${query}`, fetchOptions)
+                .then(handleResponse) // This will check for 401 status and attempt to refresh the token.
+                //.then(response => response.json())
+                .then(data => {
+                    globalLogs = data.rows;
+                    totalLogs = data.count;
+                    // Check if the current page is beyond the new total pages and adjust accordingly
+                    const totalPageCount = Math.ceil(totalLogs / pageSize);
+                    if (currentPage >= totalPageCount) {
+                        currentPage = Math.max(0, totalPageCount - 1); // Adjust to the last page if current page exceeds total pages
+                        if (totalPageCount > 0){
+                            fetchLogs(); // Refetch groups for the new current page
+                        } else {
+                            loadLogs([]); // Prevent further execution in this call
+                        }
+                    } else {
+                        updatePageIndicator(totalLogs, currentPage, pageSize);
+                        loadLogs(globalLogs);
+                    }
+
+                })
+                .catch(error => console.error('Error fetching logs:', error.message));
+        }
+
+        async function fetchCampaignDetails(campaignId) {
+            try {
+                const response = await fetch(`/campaignDetails?campaignId=${campaignId}`);
+                if (!response.ok) {
+                    throw new Error('Failed to fetch campaign details');
+                }
+                return await response.json();
+            } catch (error) {
+                console.error('Error fetching campaign details:', error);
+            }
+        }
+
+        function capitalizeFirstLetter(string) {
+            if (!string) return string; // Return the original string if it's empty or undefined
+            return string.charAt(0).toUpperCase() + string.slice(1);
+        }
+
+
+        async function loadLogs(logs) { 
+            // Process the logs and insert them into the DOM
+            const urlParams = new URLSearchParams(window.location.search);
+            const campaignId = urlParams.get('campaignId');
+            const campaignDetails = await fetchCampaignDetails(campaignId);
+
+            const logsContainer = document.getElementById('logsList');
+            logsContainer.innerHTML = ''; // Clear the current logs
+
+            if (Array.isArray(logs) && logs.length > 0) {
+                const table = document.createElement('table');
+                table.className = 'table'; // Added Bootstrap class for styling
+
+                const thead = document.createElement('thead');
+                thead.innerHTML = `<tr>
+                    <th scope="col">Campaign ${campaignDetails.name}</th>
+                    <th scope="col">${capitalizeFirstLetter(campaignDetails.template)} template</th>
+                </tr>`;
+                table.appendChild(thead);
+
+                // Create table body
+                const tbody = document.createElement('tbody');
+
+                // Populate table rows
+                logs.forEach(log => {
+                    const row = document.createElement('tr');
+                    const date = new Date(log.createdAt); // Assuming 'clickedAt' is your datetime field
+
+                    const readableDate = date.toLocaleString('en-US', {
+                        month: 'long',
+                        day: 'numeric',
+                        year: 'numeric',
+                        hour: '2-digit',
+                        minute: '2-digit',
+                        hour12: true
+                    });
+
+                    // Assuming log.Employee is not null
+                    const employeeName = log.Employee ? `${log.Employee.firstName} ${log.Employee.lastName}` : 'Unknown';
+
+                    if (log.uniqueUrl) {
+                        row.innerHTML = `
+                            <td>${employeeName} has opened the link on ${readableDate}</td>
+                            <td><td>
+                        `;
+                    } else if (log.username) {
+                        row.innerHTML = `
+                            <td>${employeeName} has sent its credentials on ${readableDate}</td>
+                            <td>
+                                <button onclick="showCredentials('${log.id}')" class="btn btn-info btn-sm">Show credentials</button>
+                            <td>
+                        `;
+                    }
+                    console.log(log);
+                    tbody.appendChild(row);
+                });
+
+                table.appendChild(tbody);
+                listContainer.appendChild(table);
+            } else {
+                listContainer.textContent = 'No logs found.';
+            }
+            console.log(logs);
+        }
+
+        function showCredentials(logId) {
+            event.preventDefault();
+            fetch(`/credentials/${logId}`, {
+                headers: { 
+                    'Authorization': `Bearer ${localStorage.getItem('accessToken')}`
+                }
+            })
+            .then(response => response.json())
+            .then(data => {
+                displayCredentialsModal(data);
+            })
+            .catch(error => console.error('Error fetching credentials:', error.message));
+        }
+
+        function displayCredentialsModal(credentials) {
+            // Populate the table with credentials data
+            document.getElementById('username').textContent = credentials.username;
+            document.getElementById('password').textContent = credentials.password;
+
+            // Using Bootstrap's modal methods to show the modal
+            var modalElement = document.getElementById('credentialsModal');
+            var modalInstance = new bootstrap.Modal(modalElement);
+            modalInstance.show();
+        }
+
+        document.addEventListener('DOMContentLoaded', fetchLogs);
+
+        function logout(failedAuth = false) {
+            if (failedAuth) {
+                alert('Session expired, please login again.');
+            }
+            // Here we send a request to the server to remove the refresh token from the database
+            fetch('/logout', {
+                method: 'DELETE',
+                headers: {
+                    'Authorization': `Bearer ${localStorage.getItem('accessToken')}`,
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify({ token: refreshToken })
+            }).then(() => {
+                localStorage.removeItem('accessToken');
+                window.location.href = '/'; // Redirect to the login page
+            }).catch(error => {
+                console.error('Error invalidating refresh token:', error);
+            });
+        }
+
+
+    </script>
+    
+</body>
+</html>

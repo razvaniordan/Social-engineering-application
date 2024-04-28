@@ -2,17 +2,17 @@ require('dotenv').config();
 
 const express = require('express');
 const path = require('path');
-const { User, RefreshToken, Employee, SendingProfile, Group, Campaign } = require('./models');
+const { User, RefreshToken, Employee, SendingProfile, Group, Campaign, InformationData, ClickLog } = require('./models');
 const bodyParser = require('body-parser');
 const bcrypt = require('bcryptjs');
 const cors = require('cors');
 const JWT = require('./JWT');
 const jwt = require('jsonwebtoken');
 const { access } = require('fs');
-const { Op } = require('sequelize');
+const { Op, Sequelize } = require('sequelize');
 const cookieParser = require('cookie-parser');
 const crypto = require('crypto');
-const { group, profile } = require('console');
+const { group, profile, log } = require('console');
 const fs = require('fs').promises;
 const nodemailer = require('nodemailer');
 
@@ -53,6 +53,10 @@ app.get('/send', (req, res) => {
 
 app.get('/profiles', (req, res) => {
     res.sendFile(path.join(__dirname, '../frontend/SendingProfiles/SendingProfiles.html'));
+});
+
+app.get('/campaignLogs', (req, res) => {
+    res.sendFile(path.join(__dirname, '../frontend/Logs/Logs.html'));
 });
 
 // This endpoint is used to verify the token before making some specific requests
@@ -526,7 +530,6 @@ app.post('/addCampaign', authenticateToken, async (req, res) => {
             group.Employees.forEach(employee => {
                 const personalizedLink = `http://localhost:4000/${landingPageId}/${newCampaign.id}/${employee.token}`;
                 const ziua = formatDateToRomanian();
-                console.log('initial template: ', emailTemplate.content);
                 let personalizedHtmlContent = emailTemplate.content.replace('{{link}}', personalizedLink);
                 personalizedHtmlContent = personalizedHtmlContent.replace('{{dataxdatayzi}}', ziua);
                 personalizedHtmlContent = personalizedHtmlContent.replace('{{email.user}}', employee.email);
@@ -578,6 +581,97 @@ app.get('/campaignsList', async (req, res) => {
     } catch (err) {
         console.error('Error fetching campaigns:', err);
         res.status(500).json({ message: 'An error occurred while fetching the campaigns.' });
+    }
+});
+
+app.get('/logsList', async (req, res) => {
+    const { campaignId, page, size, employeeName } = req.query;
+    const limit = parseInt(size);
+    const offset = parseInt(page) * limit;
+
+    try {
+
+        const employees = await Employee.findAll({
+            where: { 
+                [Op.or]: [
+                    { firstName: { [Sequelize.Op.like]: `%${employeeName}%` } },
+                    { lastName: { [Sequelize.Op.like]: `%${employeeName}%` } }
+                ]
+            }
+        });
+
+        const employeeTokens = employees.map(emp => emp.token);
+        
+        const clickLogs = employeeTokens.length > 0 ? await ClickLog.findAll({
+            where: { 
+                CampaignId: campaignId,
+                uniqueUrl: { [Sequelize.Op.in]: employeeTokens }
+            },
+            limit: limit,
+            offset: offset
+        }) : [];
+
+        const informationDataLogs = employeeTokens.length > 0 ? await InformationData.findAll({
+            where: { 
+                CampaignId: campaignId, 
+                token: { [Sequelize.Op.in]: employeeTokens }
+            },
+            limit: limit,
+            offset: offset
+        }) : [];
+
+        const employeeMap = new Map(employees.map(emp => [emp.token, emp]));
+
+        const mergedClickLogs = clickLogs.map(log => ({
+            ...log.dataValues,
+            Employee: employeeMap.get(log.uniqueUrl),
+            type: 'ClickLog'
+        }));
+
+        const mergedInformationDataLogs = informationDataLogs.map(data => ({
+            ...data.dataValues,
+            Employee: employeeMap.get(data.token),
+            type: 'InformationData'
+        }));
+
+        const combinedLogs = [...mergedClickLogs, ...mergedInformationDataLogs];
+        combinedLogs.sort((a, b) => new Date(a.createdAt) - new Date(b.createdAt));
+
+        res.json({
+            rows: combinedLogs.slice(offset, offset + limit),
+            count: combinedLogs.length
+        });
+
+    } catch (err) {
+        console.error('Error fetching logs:', err);
+        res.status(500).json({ message: 'An error occurred while fetching the logs.' });
+    }
+});
+
+app.get('/campaignDetails', async (req, res) => {
+    const campaignId = req.query.campaignId;
+    if (!campaignId) {
+        return res.status(400).json({ message: 'Campaign ID is required' });
+    }
+
+    try {
+        const campaign = await Campaign.findByPk(campaignId, {
+            attributes: ['id', 'name', 'template', 'date', 'profile']  // Adjust attributes as needed
+        });
+
+        if (!campaign) {
+            return res.status(404).json({ message: 'Campaign not found' });
+        }
+
+        res.json({
+            name: campaign.name,
+            template: campaign.template,
+            date: campaign.date,
+            profile: campaign.profile,
+        });
+    } catch (error) {
+        console.error('Error fetching campaign details:', error);
+        res.status(500).json({ message: 'An error occurred while fetching the campaign details.' });
     }
 });
 
@@ -784,6 +878,36 @@ app.post('/addSendingProfile', authenticateToken, async (req, res) => {
         return res.status(500).json({ message: 'An error occurred while adding the sending profile.' });
     }
 });
+
+app.get('/credentials/:logId', authenticateToken, async (req, res) => {
+    const logId = req.params.logId;
+
+    try {
+        const credentials = await InformationData.findOne({
+            where: { id: logId },
+            attributes: ['username', 'password'], // Only fetch the necessary data
+            include: [{
+                model: Campaign,
+                attributes: ['name'] // Fetch the campaign name if needed
+            }]
+        });
+
+        if (!credentials) {
+            return res.status(404).send('Credentials not found.');
+        }
+
+        res.json({
+            username: credentials.username,
+            password: credentials.password,
+            campaignName: credentials.Campaign.name
+        });
+    } catch (error) {
+        console.error('Failed to fetch credentials:', error);
+        res.status(500).json({ message: 'An error occurred while fetching the credentials.' });
+    }
+});
+``
+
 
 
 //use this when we want to process the requests

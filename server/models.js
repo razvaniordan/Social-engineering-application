@@ -196,6 +196,8 @@ const ClickLog = sequelizeCampaigns.define('ClickLog', {
 
 ClickLog.belongsTo(Campaign);
 Campaign.hasMany(ClickLog);
+// ClickLog.belongsTo(Employee, { foreignKey: 'employeeId' });
+// Employee.hasMany(ClickLog, { foreignKey: 'employeeId' });
 
 const InformationData = sequelizeCampaigns.define('InformationData', {
   username: {
