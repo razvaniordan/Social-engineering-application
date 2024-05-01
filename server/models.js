@@ -97,31 +97,11 @@ const Group = sequelizeEmployee.define('Group', {
 Employee.belongsTo(Group);
 Group.hasMany(Employee);
 
-// const EmployeeGroup = sequelizeEmployee.define('EmployeeGroup', {
-//   employeeId: {
-//     type: DataTypes.INTEGER,
-//     allowNull: false
-//   },
-//   groupId: {
-//     type: DataTypes.INTEGER,
-//     allowNull: false
-//   },
-//   addedDate: DataTypes.DATE
-// });
-
 const SendingProfile = sequelizeEmployee.define('SendingProfile', {
   name: {
       type: DataTypes.STRING,
       allowNull: false
   },
-  // smtpFrom: { // smtpPort
-  //     type: DataTypes.STRING,
-  //     allowNull: false
-  // },
-  // host: { // smtpHost
-  //     type: DataTypes.STRING,
-  //     allowNull: false
-  // },
   smtpHost: {
       type: DataTypes.STRING,
       allowNull: false
@@ -223,8 +203,31 @@ const InformationData = sequelizeCampaigns.define('InformationData', {
   }
 });
 
+const CampaingEmployee = sequelizeCampaigns.define('CampaignEmployee', {
+  campaignId: {
+    type: DataTypes.INTEGER,
+    allowNull: false
+  },
+  employeeToken: {
+    type: DataTypes.STRING,
+    allowNull: false
+  },
+  employeeFirstName: {
+    type: DataTypes.STRING,
+    allowNull: false
+  },
+  employeeLastName: {
+    type: DataTypes.STRING,
+    allowNull: false
+  },
+  groupId: {
+    type: DataTypes.INTEGER,
+    allowNull: false
+  }
+});
+
 InformationData.belongsTo(Campaign);
 Campaign.hasOne(InformationData);
 
 
-module.exports = { sequelize, User, sequelizeToken, RefreshToken, sequelizeEmployee, Employee, Group, SendingProfile, sequelizeCampaigns, InformationData, Campaign, ClickLog};
+module.exports = { sequelize, User, sequelizeToken, RefreshToken, sequelizeEmployee, Employee, Group, SendingProfile, sequelizeCampaigns, InformationData, Campaign, ClickLog, CampaingEmployee};

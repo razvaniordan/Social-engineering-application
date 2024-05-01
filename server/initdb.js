@@ -1,4 +1,4 @@
-const { sequelize, User, sequelizeToken, RefreshToken, sequelizeEmployee, Employee, sequelizeClickLog, ClickLog, LandingPage, sequelizeCampaigns } = require('./models');
+const { sequelize, User, sequelizeToken, RefreshToken, sequelizeEmployee, Employee, sequelizeClickLog, ClickLog, LandingPage, sequelizeCampaigns, SendingProfile } = require('./models');
 
 async function initializeDatabase() {
   // Initialize User database and table
@@ -11,6 +11,7 @@ async function initializeDatabase() {
   await sequelizeEmployee.sync({ force: false }); // This will drop the Employee table if it already exists
 
   await sequelizeCampaigns.sync({ force: true }); // This will drop the LandingPage table if it already exists
+  
 
   console.log('Database & tables created!');
 }

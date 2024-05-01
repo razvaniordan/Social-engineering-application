@@ -199,7 +199,7 @@
                 }
             };
 
-            fetch(`/campaignsList?page=${currentPage}&size=${pageSize}&search=${encodeURIComponent(searchInput.value)}`)
+            fetch(`/campaignsList?page=${currentPage}&size=${pageSize}&search=${encodeURIComponent(searchInput.value)}`, fetchOptions)
                 .then(handleResponse) // This will check for 401 status and attempt to refresh the token.
                 //.then(response => response.json())
                 .then(data => {
@@ -273,6 +273,7 @@
                         <td class="${statusClass}">${campaign.status}</td>
                         <td>
                             <button onclick="viewLogs('${campaign.id}')" class="btn btn-info btn-sm">View</button>
+                            <button onclick="removeCampaign('${campaign.name}','${campaign.id}')" class="btn btn-danger btn-sm">Remove</button>
                         </td>
                     `;
                     tbody.appendChild(row);
@@ -283,6 +284,53 @@
             } else {
                 listContainer.textContent = 'No campaigns found.';
             }
+        }
+
+        function removeCampaign(campaignName, campaignId) {
+            event.preventDefault();
+            const confirmExit = confirm(`Are you sure you want to remove the campaign ${campaignName}? This action cannot be undone.`);
+            if (!confirmExit) {
+                return; // Stop the function if the user cancels the operation
+            }
+
+            const attemptRemoveCampaign = (token) => { // This attemptRemoveCampaign function will be called recursively if the token needs to be refreshed
+                fetch('/removeCampaign', {
+                    method: 'DELETE',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Authorization': `Bearer ${token}`
+                    },
+                    body: JSON.stringify({ campaignName, campaignId }),
+                })
+                .then(result => {
+                    if(!result.ok) {
+                        if (result.status === 401 || result.status === 403) { // Unauthorized, so try to refresh the token
+                            console.log('Token expired. Attempting to refresh token...');
+                            return refreshToken().then(newToken => { // Refresh the token
+                                console.log('Token refreshed successfully.');
+                                return attemptRemoveCampaign(newToken); // Retry the original request with the new token
+                            });
+                        }
+                        if (result.status === 404) {
+                            throw new Error('Campaign not found');
+                        }
+                        throw new Error(`${result.status} - ${result.statusText}`);
+                    }
+                    return result.json();
+                })
+                .then(data => {
+                    showMessage(data.message, 'info'); // Show succes or failure
+                    fetchCampaigns(); // Refresh the employee list
+                })
+                .catch(error => {
+                    console.error(error);
+                    showMessage(error.message, 'danger');
+                });
+            };
+
+            // Start the process with the current token
+            attemptRemoveCampaign(localStorage.getItem('accessToken'));
+
         }
 
         function viewLogs(campaignId) {

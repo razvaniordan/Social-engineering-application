@@ -2,7 +2,7 @@ require('dotenv').config();
 
 const express = require('express');
 const path = require('path');
-const { User, RefreshToken, Employee, SendingProfile, Group, Campaign, InformationData, ClickLog } = require('./models');
+const { User, RefreshToken, Employee, SendingProfile, Group, Campaign, InformationData, ClickLog, CampaingEmployee } = require('./models');
 const bodyParser = require('body-parser');
 const bcrypt = require('bcryptjs');
 const cors = require('cors');
@@ -315,6 +315,22 @@ app.delete('/removeGroup', authenticateToken, async (req, res) => {
     }
 });
 
+app.delete('/removeCampaign', authenticateToken, async (req, res) => {
+    const { campaignName, campaignId } = req.body;
+    try {
+        await ClickLog.destroy({ where: { CampaignId: campaignId } });
+        await InformationData.destroy({ where: { CampaignId: campaignId } });
+        const result = await Campaign.destroy({ where: { id: campaignId } });
+        if (result > 0) {
+            res.status(200).json({ message: `Campaign ${campaignName} has been successfully removed.` });
+        } else {
+            res.status(404).json({ message: 'Campaign not found' });
+        }
+    } catch (err) {
+        res.status(500).json({ message: 'An error occurred while removing the campaign.' });
+    }
+});
+
 app.get('/checkGroupEmployees', async (req, res) => {
     const { name } = req.query;
 
@@ -339,48 +355,6 @@ app.get('/checkGroupEmployees', async (req, res) => {
         res.status(500).json({ message: 'An error occurred while checking for group employees.' });
     }
 });
-
-// app.get('/groupMembers', async (req, res) => {  // THIS IS THE OLD VERSION OF THE ENDPOINT THAT WORKED FOR SEARCHING MEMBERS BUT NOT PAGINATION
-//     const { name, page = 0, pageSize = 10, search = '' } = req.query;
-
-//     try {
-
-//         const whereClause = {
-//             name,
-//             ...(search && {
-//                 '$Employees.firstName$': { [Op.like]: `%${search}%` },
-//                 '$Employees.lastName$': { [Op.like]: `%${search}%` },
-//                 '$Employees.email$': { [Op.like]: `%${search}%` },
-//             })
-//         };
-
-//         const group = await Group.findOne({
-//             where: { name },
-//             include: [{
-//                 model: Employee,
-//                 attributes: ['id', 'firstName', 'lastName', 'email'],
-//                 where: search ? {
-//                     [Op.or]: [
-//                         { firstName: { [Op.like]: `%${search}%` } },
-//                         { lastName: { [Op.like]: `%${search}%` } },
-//                         { email: { [Op.like]: `%${search}%` } }
-//                     ]
-//                 } : {}
-//             }],
-//             offset: page * parseInt(pageSize, 10),
-//             limit: parseInt(pageSize, 10)
-//         });
-
-//         if (!group) {
-//             return res.status(404).json({ message: 'Group not found' });
-//         }
-
-//         res.json({ members: group.Employees });
-//     } catch (error) {
-//         console.error('Error fetching group members:', error);
-//         res.status(500).json({ message: 'An error occurred while fetching the group members.' });
-//     }
-// });
 
 app.get('/groupMembers', async (req, res) => {
     const { name, page = 0, pageSize = 10, search = '' } = req.query;
@@ -503,7 +477,6 @@ app.post('/addCampaign', authenticateToken, async (req, res) => {
     }
 
     try {
-        console.log('Request body:', req.body);
         sendingProfile = await SendingProfile.findByPk(sendingProfileId);
         const newCampaign = await Campaign.create({
             name,
@@ -514,7 +487,6 @@ app.post('/addCampaign', authenticateToken, async (req, res) => {
 
         const emailTemplates = await loadEmailTemplates();
         const emailTemplate = emailTemplates.find(t => t.id === emailTemplateId);
-
         if(!emailTemplate) {
             throw new Error('Email template not found');
         }
@@ -527,7 +499,17 @@ app.post('/addCampaign', authenticateToken, async (req, res) => {
 
         // Queue emails for each user in the selected groups
         groups.forEach(group => {
-            group.Employees.forEach(employee => {
+            group.Employees.forEach(async employee => {
+
+                const newCampaignEmployee = await CampaingEmployee.create({
+                    campaignId: newCampaign.id,
+                    employeeId: employee.id,
+                    employeeToken: employee.token,
+                    employeeFirstName: employee.firstName,
+                    employeeLastName: employee.lastName,
+                    groupId: group.id
+                });
+
                 const personalizedLink = `http://localhost:4000/${landingPageId}/${newCampaign.id}/${employee.token}`;
                 const ziua = formatDateToRomanian();
                 let personalizedHtmlContent = emailTemplate.content.replace('{{link}}', personalizedLink);
@@ -591,16 +573,17 @@ app.get('/logsList', async (req, res) => {
 
     try {
 
-        const employees = await Employee.findAll({
+        const employees = await CampaingEmployee.findAll({
             where: { 
                 [Op.or]: [
-                    { firstName: { [Sequelize.Op.like]: `%${employeeName}%` } },
-                    { lastName: { [Sequelize.Op.like]: `%${employeeName}%` } }
+                    { employeeFirstName: { [Sequelize.Op.like]: `%${employeeName}%` } },
+                    { employeeLastName: { [Sequelize.Op.like]: `%${employeeName}%` } }
                 ]
             }
         });
 
-        const employeeTokens = employees.map(emp => emp.token);
+        const employeeTokens = employees.map(emp => emp.employeeToken);
+        console.log('Employee tokens:', employeeTokens);
         
         const clickLogs = employeeTokens.length > 0 ? await ClickLog.findAll({
             where: { 
@@ -620,17 +603,17 @@ app.get('/logsList', async (req, res) => {
             offset: offset
         }) : [];
 
-        const employeeMap = new Map(employees.map(emp => [emp.token, emp]));
+        const employeeMap = new Map(employees.map(emp => [emp.employeeToken, emp]));
 
         const mergedClickLogs = clickLogs.map(log => ({
             ...log.dataValues,
-            Employee: employeeMap.get(log.uniqueUrl),
+            CampaignEmployee: employeeMap.get(log.uniqueUrl),
             type: 'ClickLog'
         }));
 
         const mergedInformationDataLogs = informationDataLogs.map(data => ({
             ...data.dataValues,
-            Employee: employeeMap.get(data.token),
+            CampaignEmployee: employeeMap.get(data.token),
             type: 'InformationData'
         }));
 

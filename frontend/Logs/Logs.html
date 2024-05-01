@@ -262,7 +262,10 @@
                     });
 
                     // Assuming log.Employee is not null
-                    const employeeName = log.Employee ? `${log.Employee.firstName} ${log.Employee.lastName}` : 'Unknown';
+                    const employeeName = log.CampaignEmployee ? `${log.CampaignEmployee.employeeFirstName} ${log.CampaignEmployee.employeeLastName}` : 'Unknown';
+                    console.log("Log: ", log);
+                    console.log("Employee log: ", log.CampaignEmployee);
+                    console.log("Employee name: ", employeeName);
 
                     if (log.uniqueUrl) {
                         row.innerHTML = `
