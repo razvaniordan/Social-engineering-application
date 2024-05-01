@@ -60,6 +60,7 @@
                         <div class="modal-footer d-flex justify-content-between align-items-center">
 
                             <nav aria-label="Page navigation">
+                                <span id="pageIndicatorLogs" class="me-3">Page 1 of X</span>
                                 <ul class="pagination">
                                     <li class="page-item"><a class="page-link" href="#" onclick="changeLogsPage(-1, currentEmployeeName, currentEmployeeToken)">Previous</a></li>
                                     <li class="page-item"><a class="page-link" href="#" onclick="changeLogsPage(1, currentEmployeeName, currentEmployeeToken)">Next</a></li>
@@ -346,12 +347,14 @@
                 .then(data => {
                     globalLogs = data.rows;
                     totalLogs = data.count;
+                    const totalPageCountLogs = Math.ceil(totalLogs / pageSizeLogs);
+                    updateLogsPageIndicatorLogs(page + 1, totalPageCountLogs); // Update page indicator with the new current page
                     const tbody = document.getElementById('logsTable').querySelector('tbody');
                     tbody.innerHTML = ''; // Clear the current logs
-                    let detailsText = '';
 
                     data.rows.forEach(log => {
                         let detailsText = log.type === 'ClickLog' ? 'Opened the link' : 'Submitted credentials';
+                        let buttonHTML = log.type === 'InformationData' ? `<button onclick="showCredentials('${log.id}')" class="btn btn-info btn-sm">View credentials</button>` : '';
 
                         const date = new Date(log.createdAt);
                         const readableDate = date.toLocaleString('en-US', {
@@ -363,11 +366,6 @@
                             hour12: true
                         });
 
-                        let buttonHTML = '';
-                        if (log.type === 'InformationData') {
-                            buttonHTML = `<button onclick="showCredentials('${log.id}')" class="btn btn-info btn-sm">View credentials</button>`;
-                        }
-
                         const row = `<tr>
                             <td>${detailsText}</td>
                             <td>${readableDate}</td>
@@ -377,6 +375,11 @@
                     });
                 })
                 .catch(error => console.error('Error fetching logs:', error.message));
+        }
+
+        function updateLogsPageIndicatorLogs(currentPage, totalPageCount) {
+            const pageIndicatorLogs = document.getElementById('pageIndicatorLogs');
+            pageIndicatorLogs.textContent = `Page ${currentPage} of ${totalPageCount}`;
         }
 
         function showCredentials(logId) {
