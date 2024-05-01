@@ -28,7 +28,7 @@
 
             <div id="messageDisplay" class="alert" style="display: none;"></div>
 
-            <input type="text" id="searchLog" class="form-control" placeholder="Search employee by name">
+            <input type="text" id="searchEmployee" class="form-control" placeholder="Search employee by name">
 
             <div id="paginationControls">
                 <button onclick="changePage(-1, event)" class="btn btn-secondary">Previous</button>
@@ -36,9 +36,44 @@
                 <button onclick="changePage(1, event)" class="btn btn-secondary">Next</button>
             </div>
 
-            <div class="modal fade" id="credentialsModal" tabindex="-1" aria-labelledby="credentialsModalLabel" aria-hidden="true">
-                <div class="modal-dialog modal-lg">
+            <div class="modal fade" id="logsModal" tabindex="-1" aria-labelledby="logsModalLabel" aria-hidden="true">
+                <div class="modal-dialog modal-xl">
                     <div class="modal-content">
+                        <div class="modal-header">
+                            <h5 class="modal-title" id="logsModalLabel">Employee Logs</h5>
+                            <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                        </div>
+                        <div class="modal-body">
+                            <table class="table table-bordered" id="logsTable">
+                                <thead>
+                                    <tr>
+                                        <th scope="col">Details</th>
+                                        <th scope="col">Date</th>
+                                        <th scope="col">Actions</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    <!-- Logs will be inserted here -->
+                                </tbody>
+                            </table>
+                        </div>
+                        <div class="modal-footer d-flex justify-content-between align-items-center">
+
+                            <nav aria-label="Page navigation">
+                                <ul class="pagination">
+                                    <li class="page-item"><a class="page-link" href="#" onclick="changeLogsPage(-1, currentEmployeeName, currentEmployeeToken)">Previous</a></li>
+                                    <li class="page-item"><a class="page-link" href="#" onclick="changeLogsPage(1, currentEmployeeName, currentEmployeeToken)">Next</a></li>
+                                </ul>
+                            </nav>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+
+            <div class="modal fade" id="credentialsModal" tabindex="-1" aria-labelledby="credentialsModalLabel" aria-hidden="true" style="z-index: 1070;">
+                <div class="modal-dialog modal-lg">
+                    <div class="modal-content" style="border: 2px solid #007bff; box-shadow: 0 5px 15px rgba(0,0,0,.5);">
                         <div class="modal-header">
                             <h5 class="modal-title" id="credentialsModalLabel">Credentials Details</h5>
                             <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
@@ -64,7 +99,7 @@
                 </div>
             </div>
 
-            <div id="logsList" class="list-group mt-3"></div>
+            <div id="employeesList" class="list-group mt-3"></div>
 
         </form>
 
@@ -73,22 +108,49 @@
     <script>
 
         let currentPage = 0; // Current page index
-        let totalLogs = 0; // Total number of campaigns
+        let totalLogs = 0; // Total number of logs
+        let totalEmployees = 0; // Total number of employees
         const pageSize = 10; // Campaigns per page
         
         let globalLogs = [];
-        const listContainer = document.getElementById('logsList');
-        const searchInput = document.getElementById('searchLog');
+        let globalEmployees = [];
+        const searchInput = document.getElementById('searchEmployee');
+
+        const pageSizeLogs = 10;
+        let currentPageLogs = 0;
 
         function home() {
            window.location.href = '/home';
         }
 
         function back() {
-        window.location.href = '/send';
-    }
+            window.location.href = '/send';
+        }
 
-        document.getElementById('searchLog').addEventListener('input', debouncedLoadLogs);
+        let currentEmployeeName = '';
+        let currentEmployeeToken = '';
+
+        function showLogsModal(employeeName, employeeToken) {
+            event.preventDefault();
+            currentEmployeeName = employeeName;
+            currentEmployeeToken = employeeToken;
+            document.getElementById('logsModalLabel').textContent = `Logs of ${employeeName}`;
+            fetchLogs(0, employeeName, employeeToken);
+            
+            var modalElement = document.getElementById('logsModal');
+            var modal = new bootstrap.Modal(modalElement);
+            modal.show();
+        }
+
+        function changeLogsPage(direction, employeeName, employeeToken){
+            event.preventDefault();
+            const newLogsPage = currentPageLogs + direction;
+            if (newLogsPage < 0 || newLogsPage * pageSizeLogs >= totalLogs) return;
+            currentPageLogs = newLogsPage;
+            fetchLogs(currentPageLogs, employeeName, employeeToken);
+        }
+
+        document.getElementById('searchEmployee').addEventListener('input', debouncedLoadEmployees);
 
         document.addEventListener('DOMContentLoaded', () => {
 
@@ -113,9 +175,9 @@
             event.preventDefault();
             const newPage = currentPage + direction;
             // Check new page is within range
-            if (newPage < 0 || newPage * pageSize >= totalLogs) return;
+            if (newPage < 0 || newPage * pageSize >= totalEmployees) return;
             currentPage = newPage;
-            fetchLogs();
+            fetchEmployees();
         }
 
         function updatePageIndicator(total, currentPage, pageSize) {
@@ -125,11 +187,11 @@
         let debounceTimeout;
         const debounceDelay = 300; // milliseconds
 
-        function debouncedLoadLogs() {
+        function debouncedLoadEmployees() {
             clearTimeout(debounceTimeout);
             debounceTimeout = setTimeout(() => {
                 currentPage = 0; // Reset to first page when searching
-                fetchLogs();
+                fetchEmployees();
             }, debounceDelay);
         }
 
@@ -171,41 +233,6 @@
             throw new Error('Network response was not ok.');
         }
 
-        function fetchLogs() {
-            const campaignId = new URLSearchParams(window.location.search).get('campaignId');
-            const employeeName = document.getElementById('searchLog').value;
-            
-            const query = `?campaignId=${campaignId}&page=${currentPage}&size=${pageSize}&employeeName=${encodeURIComponent(employeeName)}`;
-            const fetchOptions = {
-                headers: {
-                    'Authorization': `Bearer ${localStorage.getItem('accessToken')}`
-                }
-            };
-
-            fetch(`/logsList${query}`, fetchOptions)
-                .then(handleResponse) // This will check for 401 status and attempt to refresh the token.
-                //.then(response => response.json())
-                .then(data => {
-                    globalLogs = data.rows;
-                    totalLogs = data.count;
-                    // Check if the current page is beyond the new total pages and adjust accordingly
-                    const totalPageCount = Math.ceil(totalLogs / pageSize);
-                    if (currentPage >= totalPageCount) {
-                        currentPage = Math.max(0, totalPageCount - 1); // Adjust to the last page if current page exceeds total pages
-                        if (totalPageCount > 0){
-                            fetchLogs(); // Refetch groups for the new current page
-                        } else {
-                            loadLogs([]); // Prevent further execution in this call
-                        }
-                    } else {
-                        updatePageIndicator(totalLogs, currentPage, pageSize);
-                        loadLogs(globalLogs);
-                    }
-
-                })
-                .catch(error => console.error('Error fetching logs:', error.message));
-        }
-
         async function fetchCampaignDetails(campaignId) {
             try {
                 const response = await fetch(`/campaignDetails?campaignId=${campaignId}`);
@@ -218,78 +245,138 @@
             }
         }
 
-        function capitalizeFirstLetter(string) {
-            if (!string) return string; // Return the original string if it's empty or undefined
-            return string.charAt(0).toUpperCase() + string.slice(1);
+        function fetchEmployees() {
+            const campaignId = new URLSearchParams(window.location.search).get('campaignId');
+            const employeeName = document.getElementById('searchEmployee').value;
+            
+            const query = `?campaignId=${campaignId}&page=${currentPage}&size=${pageSize}&employeeName=${encodeURIComponent(employeeName)}`;
+            const fetchOptions = {
+                headers: {
+                    'Authorization': `Bearer ${localStorage.getItem('accessToken')}`
+                }
+            };
+
+            fetch(`/campaignEmployees${query}`, fetchOptions)
+                .then(handleResponse) // This will check for 401 status and attempt to refresh the token.
+                //.then(response => response.json())
+                .then(data => {
+                    globalEmployees = data.rows;
+                    totalEmployees = data.count;
+                    // Check if the current page is beyond the new total pages and adjust accordingly
+                    const totalPageCount = Math.ceil(totalEmployees / pageSize);
+                    if (currentPage >= totalPageCount) {
+                        currentPage = Math.max(0, totalPageCount - 1); // Adjust to the last page if current page exceeds total pages
+                        if (totalPageCount > 0){
+                            fetchEmployees(); // Refetch groups for the new current page
+                        } else {
+                            loadEmployees([]); // Prevent further execution in this call
+                        }
+                    } else {
+                        updatePageIndicator(totalEmployees, currentPage, pageSize);
+                        loadEmployees(globalEmployees);
+                    }
+
+                })
+                .catch(error => console.error('Error fetching logs:', error.message));
         }
 
-
-        async function loadLogs(logs) { 
+        async function loadEmployees(employees) { 
             // Process the logs and insert them into the DOM
             const urlParams = new URLSearchParams(window.location.search);
             const campaignId = urlParams.get('campaignId');
             const campaignDetails = await fetchCampaignDetails(campaignId);
 
-            const logsContainer = document.getElementById('logsList');
-            logsContainer.innerHTML = ''; // Clear the current logs
+            const employeesContainer = document.getElementById('employeesList');
+            employeesContainer.innerHTML = ''; // Clear the current logs
 
-            if (Array.isArray(logs) && logs.length > 0) {
-                const table = document.createElement('table');
-                table.className = 'table'; // Added Bootstrap class for styling
+            if (Array.isArray(employees) && employees.length > 0) {
+                const tableEmployee = document.createElement('table');
+                tableEmployee.className = 'table'; // Added Bootstrap class for styling
 
-                const thead = document.createElement('thead');
-                thead.innerHTML = `<tr>
-                    <th scope="col">Campaign ${campaignDetails.name}</th>
-                    <th scope="col">${capitalizeFirstLetter(campaignDetails.template)} template</th>
+                const theadEmployee = document.createElement('thead');
+                theadEmployee.innerHTML = `<tr>
+                    <th scope="col">Employees of campaign ${campaignDetails.name}</th>
+                    <th scope="col">Actions</th>
                 </tr>`;
-                table.appendChild(thead);
+                tableEmployee.appendChild(theadEmployee);
 
                 // Create table body
-                const tbody = document.createElement('tbody');
+                const tbodyEmployee = document.createElement('tbody');
 
                 // Populate table rows
-                logs.forEach(log => {
+                employees.forEach(employee => { // Don't forget that employees are the CampaignEmployee objects not Employee objects !!!
                     const row = document.createElement('tr');
-                    const date = new Date(log.createdAt); // Assuming 'clickedAt' is your datetime field
 
-                    const readableDate = date.toLocaleString('en-US', {
-                        month: 'long',
-                        day: 'numeric',
-                        year: 'numeric',
-                        hour: '2-digit',
-                        minute: '2-digit',
-                        hour12: true
-                    });
+                    //const employeeName = employee.CampaignEmployee ? `${employee.CampaignEmployee.employeeFirstName} ${employee.CampaignEmployee.employeeLastName}` : 'Unknown';
+                    const employeeName = employee.employeeFirstName + ' ' + employee.employeeLastName;
+                    row.innerHTML = `
+                        <td>${employeeName}</td>
+                        <td>
+                            <button onclick="showLogsModal('${employeeName}', '${employee.employeeToken}')" class="btn btn-info btn-sm">View logs</button>
+                        <td>
+                    `;
+                    console.log("Name: ", employeeName);
+                    console.log("Token: ", employee.employeeToken);
+                    console.log("Employee: ", employee);
 
-                    // Assuming log.Employee is not null
-                    const employeeName = log.CampaignEmployee ? `${log.CampaignEmployee.employeeFirstName} ${log.CampaignEmployee.employeeLastName}` : 'Unknown';
-                    console.log("Log: ", log);
-                    console.log("Employee log: ", log.CampaignEmployee);
-                    console.log("Employee name: ", employeeName);
-
-                    if (log.uniqueUrl) {
-                        row.innerHTML = `
-                            <td>${employeeName} has opened the link on ${readableDate}</td>
-                            <td><td>
-                        `;
-                    } else if (log.username) {
-                        row.innerHTML = `
-                            <td>${employeeName} has sent its credentials on ${readableDate}</td>
-                            <td>
-                                <button onclick="showCredentials('${log.id}')" class="btn btn-info btn-sm">Show credentials</button>
-                            <td>
-                        `;
-                    }
-                    console.log(log);
-                    tbody.appendChild(row);
+                    tbodyEmployee.appendChild(row);
                 });
 
-                table.appendChild(tbody);
-                listContainer.appendChild(table);
+                tableEmployee.appendChild(tbodyEmployee);
+                employeesContainer.appendChild(tableEmployee);
+                console.log("Employees: ", employees);
+                console.log("EmployeesContainer: ", employeesContainer);
             } else {
-                listContainer.textContent = 'No logs found.';
+                employeesContainer.textContent = 'No logs found.';
             }
-            console.log(logs);
+        }
+
+        function fetchLogs(page, employeeName, employeeToken) {
+            const campaignId = new URLSearchParams(window.location.search).get('campaignId');
+            const query = `?campaignId=${campaignId}&page=${page}&size=${pageSizeLogs}&employeeName=${encodeURIComponent(employeeName)}&employeeToken=${employeeToken}`;
+            const fetchOptions = {
+                method: 'GET',
+                headers: {
+                    'Authorization': `Bearer ${localStorage.getItem('accessToken')}`
+                }
+            };
+
+            fetch(`/logsList${query}`, fetchOptions)
+                .then(handleResponse) // This will check for 401 status and attempt to refresh the token.
+                .then(data => {
+                    globalLogs = data.rows;
+                    totalLogs = data.count;
+                    const tbody = document.getElementById('logsTable').querySelector('tbody');
+                    tbody.innerHTML = ''; // Clear the current logs
+                    let detailsText = '';
+
+                    data.rows.forEach(log => {
+                        let detailsText = log.type === 'ClickLog' ? 'Opened the link' : 'Submitted credentials';
+
+                        const date = new Date(log.createdAt);
+                        const readableDate = date.toLocaleString('en-US', {
+                            month: 'long',
+                            day: 'numeric',
+                            year: 'numeric',
+                            hour: '2-digit',
+                            minute: '2-digit',
+                            hour12: true
+                        });
+
+                        let buttonHTML = '';
+                        if (log.type === 'InformationData') {
+                            buttonHTML = `<button onclick="showCredentials('${log.id}')" class="btn btn-info btn-sm">View credentials</button>`;
+                        }
+
+                        const row = `<tr>
+                            <td>${detailsText}</td>
+                            <td>${readableDate}</td>
+                            <td>${buttonHTML}</td>
+                            </tr>`;
+                        tbody.innerHTML += row;
+                    });
+                })
+                .catch(error => console.error('Error fetching logs:', error.message));
         }
 
         function showCredentials(logId) {
@@ -317,7 +404,12 @@
             modalInstance.show();
         }
 
-        document.addEventListener('DOMContentLoaded', fetchLogs);
+        document.addEventListener('DOMContentLoaded', fetchEmployees);
+
+        function capitalizeFirstLetter(string) {
+            if (!string) return string; // Return the original string if it's empty or undefined
+            return string.charAt(0).toUpperCase() + string.slice(1);
+        }
 
         function logout(failedAuth = false) {
             if (failedAuth) {

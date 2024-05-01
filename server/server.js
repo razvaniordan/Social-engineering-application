@@ -566,24 +566,92 @@ app.get('/campaignsList', async (req, res) => {
     }
 });
 
-app.get('/logsList', async (req, res) => {
+app.get('/campaignEmployees', async (req, res) => {
     const { campaignId, page, size, employeeName } = req.query;
     const limit = parseInt(size);
     const offset = parseInt(page) * limit;
 
     try {
-
         const employees = await CampaingEmployee.findAll({
             where: { 
                 [Op.or]: [
                     { employeeFirstName: { [Sequelize.Op.like]: `%${employeeName}%` } },
                     { employeeLastName: { [Sequelize.Op.like]: `%${employeeName}%` } }
-                ]
+                ],
+                campaignId: campaignId
+            },
+            limit: limit,
+            offset: offset
+        });
+
+        res.json({
+            rows: employees,
+            count: employees.length
+        });
+
+    } catch (err) {
+        console.error('Error fetching campaign employees:', err);
+        res.status(500).json({ message: 'An error occurred while fetching the campaign employees.' });
+    }
+});
+
+// app.get('/groupMembers', async (req, res) => {
+//     const { name, page = 0, pageSize = 10, search = '' } = req.query;
+
+//     try {
+//         // First, find the group to ensure it exists
+//         const group = await Group.findOne({ where: { name } });
+//         if (!group) {
+//             return res.status(404).json({ message: 'Group not found' });
+//         }
+
+//         // Construct the where clause for employees
+//         const employeeWhereClause = search ? {
+//             [Op.or]: [
+//                 { firstName: { [Op.like]: `%${search}%` } },
+//                 { lastName: { [Op.like]: `%${search}%` } },
+//                 { email: { [Op.like]: `%${search}%` } }
+//             ],
+//             groupId: group.id
+//         } : { groupId: group.id };
+
+//         // Query to get the total count of employees in the group
+//         const totalMembersCount = await Employee.count({
+//             where: employeeWhereClause
+//         });
+
+//         // Query to get the paginated list of employees
+//         const employees = await Employee.findAll({
+//             where: employeeWhereClause,
+//             attributes: ['id', 'firstName', 'lastName', 'email'],
+//             limit: parseInt(pageSize, 10),
+//             offset: page * parseInt(pageSize, 10)
+//         });
+
+//         res.json({ 
+//             count: totalMembersCount, 
+//             members: employees 
+//         });
+//     } catch (error) {
+//         console.error('Error fetching group members:', error);
+//         res.status(500).json({ message: 'An error occurred while fetching the group members.' });
+//     }
+// });
+
+app.get('/logsList', async (req, res) => {
+    const { campaignId, page = 0, size = 10, employeeName, employeeToken } = req.query;
+    const limit = parseInt(size);
+    const offset = parseInt(page) * limit;
+
+    try {
+        const employees = await CampaingEmployee.findAll({
+            where: { 
+                campaignId: campaignId,
+                employeeToken: employeeToken
             }
         });
 
         const employeeTokens = employees.map(emp => emp.employeeToken);
-        console.log('Employee tokens:', employeeTokens);
         
         const clickLogs = employeeTokens.length > 0 ? await ClickLog.findAll({
             where: { 

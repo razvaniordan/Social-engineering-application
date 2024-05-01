@@ -93,13 +93,11 @@ h1 {
     max-width: 650px;
 }
 
-#searchLog {
-    display: flex;
-    align-items: center;
-    gap: 10px;
-    justify-content: start;
-    flex-grow: 1; /* Make both items take up equal space */
-    margin-right: 10px; /* Add some margin to the right of the search field if needed */
-    margin-bottom: 10px;
-    max-width: 650px;
+.modal.fade .modal-dialog {
+    transform: scale(0.9);
+    transition: transform 0.3s ease-out;
+}
+
+.modal.show .modal-dialog {
+    transform: scale(1);
 }

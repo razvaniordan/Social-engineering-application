@@ -334,11 +334,7 @@
 
     function changeMembersPage(direction, groupName){
         event.preventDefault();
-        console.log('currentPageMembers: ', currentPageMembers);
         const newMembersPage = currentPageMembers + direction;
-        console.log('newMembersPage: ', newMembersPage);
-        console.log('pageSizeMembers: ', pageSizeMembers);
-        console.log('totalMembers: ', totalMembers);
         if (newMembersPage < 0 || newMembersPage * pageSizeMembers >= totalMembers) return;
         currentPageMembers = newMembersPage;
         fetchMembers(currentPageMembers, groupName, searchMemberInput.value);
