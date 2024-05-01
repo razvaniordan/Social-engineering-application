@@ -6,31 +6,76 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Dashboard</title>
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet" integrity="sha384-QWTKZyjpPEjISv5WaRU9OFeRpok6YctnYmDr5pNlyT2bRjXh0JMhjY6hW+ALEwIH" crossorigin="anonymous">
-    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js" integrity="sha384-YvpcrYf0tY3lHB60NNkmXc5s9fDVZLESaAA55NDzOxhy9GkcIdslK1eN7N6jIeHz" crossorigin="anonymous"></script>
     <link href="https://fonts.googleapis.com/css2?family=Roboto:wght@400;700&display=swap" rel="stylesheet">
+    <link href="https://cdn.lineicons.com/4.0/lineicons.css" rel="stylesheet"/>
+
     <link rel="stylesheet" href="/Platform/Platform.css">
 </head>
 
 <body>
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js" integrity="sha384-YvpcrYf0tY3lHB60NNkmXc5s9fDVZLESaAA55NDzOxhy9GkcIdslK1eN7N6jIeHz" crossorigin="anonymous"></script>
 
-    <div class="wrapper">
-        <form action="">
-            
-            <h1>
-                Dashboard
-                <button id="btnLogout" type="button" class="btn btn-light" onclick="logout()">Log out</button>
-            </h1>
-
-            <div class="d-grid gap-3">
-                <button class="btn btn-primary" type="button" onclick="editEmp()">Employees</button>
-                <button class="btn btn-primary" type="button" onclick="sendingProfiles()">Sending profiles</button>
-                <button class="btn btn-primary" type="button" onclick="sendEmails()">Campaigns</button>
+    <div class="wrapper d-flex">
+        <aside id="sidebar">
+            <div class="d-flex">
+                <button class="toggle-btn" type="button">
+                    <i class="lni lni-grid-alt"></i>
+                </button>
+                <div class="sidebar-logo">
+                    <a href="#">Dashboard</a>
+                </div>
             </div>
-
-        </form>
+            <ul class="sidebar-nav">
+                <li class="sidebar-item">
+                    <a href="#" class="sidebar-link" onclick="sendingProfiles()">
+                        <i class="lni lni-user"></i>
+                        <span>Sending profiles</span>
+                    </a>
+                </li>
+                <li class="sidebar-item">
+                    <a href="#" class="sidebar-link has-dropdown collapsed" data-bs-toggle="collapse"
+                        data-bs-target="#auth" aria-expanded="false" aria-controls="auth">
+                        <i class="lni lni-agenda"></i>
+                        <span>Employees</span>
+                    </a>
+                    <ul id="auth" class="sidebar-dropdown list-unstyled collapse" data-bs-parent="#sidebar">
+                        <li class="sidebar-item">
+                            <a href="#" class="sidebar-link" onclick="editEmp()">Employees</a>
+                        </li>
+                        <li class="sidebar-item">
+                            <a href="#" class="sidebar-link" onclick="groups()">Groups</a>
+                        </li>
+                    </ul>
+                </li>
+                <li class="sidebar-item">
+                    <a href="#" class="sidebar-link" onclick="sendEmails()">
+                        <i class="lni lni-popup"></i>
+                        <span>Campaigns</span>
+                    </a>
+                </li>
+            </ul>
+            <div class="sidebar-footer">
+                <a href="#" class="sidebar-link" onclick="logout()">
+                    <i class="lni lni-exit"></i>
+                    <span>Logout</span>
+                </a>
+            </div>
+        </aside>
+        <div class="main p-3">
+            <form action="">
+                <h1>
+                    Home
+                </h1>
+            </form>
+        </div>
     </div>
 
     <script>
+        const hamBurger = document.querySelector(".toggle-btn");
+
+        hamBurger.addEventListener("click", function () {
+        document.querySelector("#sidebar").classList.toggle("expand");
+        });
 
         function editEmp() {
             window.location.href = '/edit';
@@ -42,6 +87,10 @@
 
         function sendEmails() {
             window.location.href = '/send';
+        }
+
+        function groups() {
+            window.location.href = '/groups';
         }
 
         function refreshToken() {
