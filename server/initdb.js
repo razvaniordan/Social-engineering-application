@@ -11,7 +11,7 @@ async function initializeDatabase() {
   await sequelizeEmployee.sync({ force: false }); // This will drop the Employee table if it already exists
 
   await sequelizeCampaigns.sync({ force: true }); // This will drop the LandingPage table if it already exists
-  
+  await SendingProfile.create({ name: 'Yahoo', smtpHost: 'smtp.mail.yahoo.com', smtpPort: '587', username: 'alexboss202@yahoo.com', password: 'hkxcoummxfipmbir' }); 
 
   console.log('Database & tables created!');
 }
