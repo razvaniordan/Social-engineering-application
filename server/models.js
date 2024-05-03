@@ -226,8 +226,23 @@ const CampaingEmployee = sequelizeCampaigns.define('CampaignEmployee', {
   }
 });
 
+const EmailOpen = sequelizeCampaigns.define('EmailOpen', {
+  employeeUniqueUrl: {
+      type: DataTypes.STRING,
+      allowNull: false
+  },
+  openedAt: {
+      type: DataTypes.DATE,
+      defaultValue: DataTypes.NOW
+  }
+});
+
+EmailOpen.belongsTo(Campaign);
+Campaign.hasMany(EmailOpen);
+
+
 InformationData.belongsTo(Campaign);
 Campaign.hasOne(InformationData);
 
 
-module.exports = { sequelize, User, sequelizeToken, RefreshToken, sequelizeEmployee, Employee, Group, SendingProfile, sequelizeCampaigns, InformationData, Campaign, ClickLog, CampaingEmployee};
+module.exports = { sequelize, User, sequelizeToken, RefreshToken, sequelizeEmployee, Employee, Group, SendingProfile, sequelizeCampaigns, InformationData, Campaign, ClickLog, EmailOpen, CampaingEmployee};

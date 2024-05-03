@@ -2,7 +2,7 @@ require('dotenv').config();
 
 const express = require('express');
 const path = require('path');
-const { User, RefreshToken, Employee, SendingProfile, Group, Campaign, InformationData, ClickLog, CampaingEmployee } = require('./models');
+const { User, RefreshToken, Employee, SendingProfile, Group, Campaign, InformationData, ClickLog, EmailOpen, CampaingEmployee } = require('./models');
 const bodyParser = require('body-parser');
 const bcrypt = require('bcryptjs');
 const cors = require('cors');
@@ -15,7 +15,6 @@ const crypto = require('crypto');
 const { group, profile, log } = require('console');
 const fs = require('fs').promises;
 const nodemailer = require('nodemailer');
-
 const sendEmailQueue = require('./emailWorkers');
 
 const app = express();
@@ -514,7 +513,11 @@ app.post('/addCampaign', authenticateToken, async (req, res) => {
                 const ziua = formatDateToRomanian();
                 let personalizedHtmlContent = emailTemplate.content.replace('{{link}}', personalizedLink);
                 personalizedHtmlContent = personalizedHtmlContent.replace('{{dataxdatayzi}}', ziua);
-                personalizedHtmlContent = personalizedHtmlContent.replace('{{email.user}}', employee.email);
+                personalizedHtmlContent = personalizedHtmlContent.replace('{{campaignId}}', newCampaign.id);
+                personalizedHtmlContent = personalizedHtmlContent.replace('{{employeeToken}}', employee.token);
+                personalizedHtmlContent = personalizedHtmlContent.replace('{{emailuser}}', employee.email);
+
+                //let bodyHtml = '<p> Email brooo </p>' + '<img src = "http://localhost:3000/track/1/b6cac057" style="height:400px; width:400px; border:0;" alt="">';
 
                 // Schedule the email for the launch date
                 const delay = new Date(launchDate) - new Date(); // Delay in ms
@@ -629,7 +632,14 @@ app.get('/logsList', async (req, res) => {
             }
         });
 
-        const totalLogs = totalClickLogs + totalInformationDataLogs;
+        const totalEmailsOpened = await EmailOpen.count({
+            where: {
+                CampaignId: campaignId,
+                employeeUniqueUrl: { [Sequelize.Op.in]: employeeTokens }
+            }
+        });
+
+        const totalLogs = totalClickLogs + totalInformationDataLogs + totalEmailsOpened;
         
         const clickLogs = await ClickLog.findAll({
             where: { 
@@ -649,6 +659,15 @@ app.get('/logsList', async (req, res) => {
             offset: offset
         });
 
+        const emailsOpenedLogs = await EmailOpen.findAll({
+            where: {
+                CampaignId: campaignId,
+                employeeUniqueUrl: { [Sequelize.Op.in]: employeeTokens }
+            },
+            limit: limit,
+            offset: offset
+        });
+
         const employeeMap = new Map(employees.map(emp => [emp.employeeToken, emp]));
 
         const mergedClickLogs = clickLogs.map(log => ({
@@ -663,7 +682,13 @@ app.get('/logsList', async (req, res) => {
             type: 'InformationData'
         }));
 
-        const combinedLogs = [...mergedClickLogs, ...mergedInformationDataLogs];
+        const mergedEmailsOpenedLogs = emailsOpenedLogs.map(data => ({
+            ...data.dataValues,
+            CampaignEmployee: employeeMap.get(data.employeeUniqueUrl),
+            type: 'EmailOpen'
+        }));
+
+        const combinedLogs = [...mergedClickLogs, ...mergedInformationDataLogs, ...mergedEmailsOpenedLogs];
         combinedLogs.sort((a, b) => new Date(a.createdAt) - new Date(b.createdAt));
 
         res.json({
@@ -937,7 +962,22 @@ app.get('/credentials/:logId', authenticateToken, async (req, res) => {
 });
 ``
 
+app.get('/track/:campaignId/:employeeToken', async (req, res) => {
+    const { campaignId, employeeToken } = req.params;
 
+    try {
+        await EmailOpen.create({
+            employeeUniqueUrl: employeeToken,
+            CampaignId: campaignId
+        });
+        console.log(`Email opened: Campaign ${campaignId}, Employee ${employeeToken}`);
+    } catch (error) {
+        console.error('Error logging email open:', error);
+    }
+
+    res.set('Content-Type', 'image/gif');
+    res.send(pixel);
+});
 
 //use this when we want to process the requests
 app.use( (req,res,next) => {//this a custom middleware function and has next()
@@ -950,6 +990,18 @@ app.use( (err,req,res,next) => {        // handles servers errors
     res.status(500).json({message: 'server error'}) // responds with status code 500 and message 'server error'
 })
 
-app.listen(port, () => {
-    console.log(`Server running at http://localhost:${port}`);
-});
+
+let pixel;
+
+async function initializeServer() {
+    try {
+        pixel = await fs.readFile(path.join(__dirname, './public/rondancing.gif'));
+        // Start the server once the pixel is loaded
+        app.listen(port, () => console.log(`Server running at http://localhost:${port}`));
+        console.log(pixel);
+    } catch (error) {
+        console.error('Error loading the pixel image:', error);
+    }
+}
+
+initializeServer();

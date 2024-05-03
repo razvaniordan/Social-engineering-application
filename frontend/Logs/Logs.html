@@ -427,6 +427,14 @@
                         let detailsText = log.type === 'ClickLog' ? 'Opened the link' : 'Submitted credentials';
                         let buttonHTML = log.type === 'InformationData' ? `<button onclick="showCredentials('${log.id}')" class="btn btn-info btn-sm">View credentials</button>` : '';
 
+                        if (log.type === 'ClickLog') {
+                            detailsText = `Opened the link`;
+                        } else if (log.type === 'InformationData') {
+                            detailsText = `Submitted credentials`;
+                        } else if (log.type === 'EmailOpen'){
+                            detailsText = `Opened the email`;
+                        }
+
                         const date = new Date(log.createdAt);
                         const readableDate = date.toLocaleString('en-US', {
                             month: 'long',
