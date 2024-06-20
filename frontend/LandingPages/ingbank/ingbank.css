@@ -1,0 +1,105 @@
+@import url('https://fonts.googleapis.com/css2?family=Abel&family=Open+Sans:ital,wght@0,300..800;1,300..800&family=Space+Grotesk:wght@300..700&family=Yanone+Kaffeesatz:wght@200..700&display=swap');
+
+body {
+
+    font-family: 'Open Sans', arial, helvetica, sans-serif !important;;
+    background-image: url('background2.jpg');
+    background-size: cover;
+    background-position: center;
+    margin: 0;
+    height: 100vh;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background-color: #f4f4f4; /* Light gray background if the image fails to load */
+}
+
+.login-container {
+    font-family: 'Open Sans', sans-serif;
+    width: 350px;
+    background-color: rgba(255, 255, 255, 0.9); /* Semi-transparent background */
+    padding: 30px 40px;
+    border-radius: 10px;
+    box-shadow: 0 8px 16px rgba(0,0,0,0.1);
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+}
+
+.login-form label {
+    font-size: 14px;
+    color: #333;
+    margin-bottom: 5px;
+    display:grid;
+}
+
+.form-group {
+    width: 110%;
+    margin-bottom: 20px;
+    align-items:flex-start;
+}
+
+.form-group label {
+    font-size: 12px;
+    opacity: 0.8;
+    display: block;
+    margin-bottom: 10px;
+}
+
+.form-group input {
+    width: 282px;
+    padding: 12px;
+    border: 1px solid #ccc;
+    border-radius: 4px;
+    margin-bottom: 20px;
+}
+
+input::placeholder {
+    opacity: 0.5;
+}
+
+#username::placeholder {
+    opacity: 0.5;
+}
+
+#password::placeholder {
+    opacity: 0.5;
+}
+
+.login-form button {
+    display: inline-flex;
+    justify-content: center;
+    align-items: center;
+    border-radius: 8px;
+    position: relative;
+    box-sizing: border-box;
+    width: 100%;
+    max-width: 272px;
+    min-height: 44px;
+    padding: 8px 16px;
+    font-size: 19px;
+    font-weight: 700;
+    color: rgb(255, 255, 255);
+    background-color: rgb(255, 98, 0);
+    text-align: center;
+    margin: 0px auto;
+    margin-left: 17px;
+}
+
+.login-form button:hover {
+    background-color: #E55A00;
+    box-shadow: 0 5px 10px 0px rgba(218, 166, 133, 0.5);
+}
+
+.login-form a {
+    color: #0077CC;
+    text-align: center;
+    display: block;
+    margin-top: 20px;
+    text-decoration: none;
+    font-size: 14px;
+}
+
+.login-form a:hover {
+    text-decoration: underline;
+}

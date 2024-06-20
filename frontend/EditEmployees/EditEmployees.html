@@ -175,10 +175,6 @@
     
                 <div id="searchAndGenerate" class="form-group d-flex">
                     <input type="text" id="searchEmail" class="form-control" placeholder="Search employee">
-                    <div id="generator" class="form-control d-flex">
-                        <input class="form-control" type="text" value="Press GENERATE in order to generate the link" readonly>
-                        <button onclick="copyLink()" class="btn btn-secondary">Copy</button>
-                    </div>
                 </div>
     
                 <div id="paginationControls">
@@ -368,7 +364,6 @@
                         <td>${employee.email}</td>
                         <td>${groupName}</td>
                         <td>
-                            <button class="btn btn-success btn-sm" onclick="displayLink('${uniqueLink}', '${employee.firstName} ${employee.lastName}')">Generate link</button>
                             <button class="btn btn-warning btn-sm" onclick="editEmployee('${employee.id}')">Edit</button>
                             <button class="btn btn-danger btn-sm" onclick="removeEmployee('${employee.email}', '${employee.firstName} ${employee.lastName}')">Remove</button>
                             ${groupName === '<span style="color: grey;">NULL</span>' 

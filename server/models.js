@@ -91,9 +91,6 @@ const Group = sequelizeEmployee.define('Group', {
   } 
 });
 
-// Employee.belongsToMany(Group, { through: 'EmployeeGroup' });
-// Group.belongsToMany(Employee, { through: 'EmployeeGroup' });
-
 Employee.belongsTo(Group);
 Group.hasMany(Employee);
 

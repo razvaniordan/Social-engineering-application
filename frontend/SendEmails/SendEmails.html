@@ -560,7 +560,7 @@
             const newCampaignModal = new bootstrap.Modal(document.getElementById('newCampaignModal'));
             document.getElementById('newCampaignModal').addEventListener('show.bs.modal', populateFormDropdowns);
 
-            // Example of polling setup in your JavaScript front-end
+            // Example of polling setup in the JavaScript front-end
             setInterval(async () => {
                 const campaigns = await fetch(`/campaignsList?page=${currentPage}&size=${pageSize}&search=${encodeURIComponent(searchInput.value)}`, {
                     headers: {

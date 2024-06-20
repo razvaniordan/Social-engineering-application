@@ -28,7 +28,7 @@ async function sendEmail(recipient, subject, content, sendingProfileId, campaign
     });
 
     const mailOptions = {
-        from: `"John Doe" <${profile.username}>`, // sender address
+        from: `"${profile.name}" <${profile.username}>`, // sender address
         to: recipient, // list of receivers
         subject: subject, // Subject line
         html: content // html body

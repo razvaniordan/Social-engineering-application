@@ -515,7 +515,6 @@ app.post('/addCampaign', authenticateToken, async (req, res) => {
                 personalizedHtmlContent = personalizedHtmlContent.replace('{{dataxdatayzi}}', ziua);
                 personalizedHtmlContent = personalizedHtmlContent.replace('{{campaignId}}', newCampaign.id);
                 personalizedHtmlContent = personalizedHtmlContent.replace('{{employeeToken}}', employee.token);
-                personalizedHtmlContent = personalizedHtmlContent.replace('{{emailuser}}', employee.email);
 
                 //let bodyHtml = '<p> Email brooo </p>' + '<img src = "http://localhost:3000/track/1/b6cac057" style="height:400px; width:400px; border:0;" alt="">';
 
@@ -995,10 +994,9 @@ let pixel;
 
 async function initializeServer() {
     try {
-        pixel = await fs.readFile(path.join(__dirname, './public/rondancing.gif'));
+        pixel = await fs.readFile(path.join(__dirname, './public/transparent.gif'));
         // Start the server once the pixel is loaded
         app.listen(port, () => console.log(`Server running at http://localhost:${port}`));
-        console.log(pixel);
     } catch (error) {
         console.error('Error loading the pixel image:', error);
     }

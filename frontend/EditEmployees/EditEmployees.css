@@ -270,6 +270,7 @@ h1 {
 #searchEmail, #generator {
     flex-grow: 1; /* Make both items take up equal space */
     margin-right: 10px; /* Add some margin to the right of the search field if needed */
+    margin-bottom: 15px;
 }
 
 #generator {

@@ -27,6 +27,12 @@
             </div>
             <ul class="sidebar-nav">
                 <li class="sidebar-item">
+                    <a href="#" class="sidebar-link" onclick="home()">
+                        <i class="lni lni-home"></i>
+                        <span>Home</span>
+                    </a>
+                </li>
+                <li class="sidebar-item">
                     <a href="#" class="sidebar-link" onclick="sendingProfiles()">
                         <i class="lni lni-user"></i>
                         <span>Sending profiles</span>
@@ -76,6 +82,10 @@
         hamBurger.addEventListener("click", function () {
         document.querySelector("#sidebar").classList.toggle("expand");
         });
+
+        function home() {
+           window.location.href = '/home';
+        }
 
         function editEmp() {
             window.location.href = '/edit';

@@ -61,27 +61,12 @@ body {
     font-size: 20px;
 }
 
-.wrapper .remember-forgot {
-    display: flex;
-    justify-content: space-between;
-    font-size: 14.5px;
-    margin: -15px 0 15px;
-}
-
 .wrapper .showpsd{
+    justify-content: space-between;
+    margin-bottom: 15px;
     margin-left: 10px;
     color: #fff;
     text-decoration: none;
-}
-
-.remember-forgot a {
-    margin-left: 270px;
-    color: #fff;
-    text-decoration: none;
-}
-
-.remember-forgot a:hover {
-    text-decoration: underline;
 }
 
 .wrapper .btn {

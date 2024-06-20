@@ -428,7 +428,7 @@
                         let buttonHTML = log.type === 'InformationData' ? `<button onclick="showCredentials('${log.id}')" class="btn btn-info btn-sm">View credentials</button>` : '';
 
                         if (log.type === 'ClickLog') {
-                            detailsText = `Opened the link`;
+                            detailsText = `Clicked the link`;
                         } else if (log.type === 'InformationData') {
                             detailsText = `Submitted credentials`;
                         } else if (log.type === 'EmailOpen'){
