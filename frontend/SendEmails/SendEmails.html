@@ -329,6 +329,7 @@
                     const row = document.createElement('tr');
                     row.setAttribute('data-campaign-id', campaign.id);
                     const statusClass = getStatusClass(campaign.status);
+                    const buttonsClass = getButtonsClass(campaign.status);
 
                     const date = new Date(campaign.date);
 
@@ -341,17 +342,40 @@
                         hour12: true
                     });
 
-                    row.innerHTML = `
-                        <td>${campaign.name}</td>
-                        <td>${campaign.template}</td>
-                        <td>${readableDate}</td>
-                        <td>${campaign.profile}</td>
-                        <td class="${statusClass}">${campaign.status}</td>
-                        <td>
-                            <button onclick="viewLogs('${campaign.id}')" class="btn btn-info btn-sm">View</button>
-                            <button onclick="removeCampaign('${campaign.name}','${campaign.id}')" class="btn btn-danger btn-sm">Remove</button>
-                        </td>
-                    `;
+                    if(campaign.status === 'Sent'){
+                        row.innerHTML = `
+                            <td>${campaign.name}</td>
+                            <td>${campaign.template}</td>
+                            <td>${readableDate}</td>
+                            <td>${campaign.profile}</td>
+                            <td class="${statusClass}">${campaign.status}</td>
+                            <td class="${buttonsClass}">
+                                <button onclick="viewLogs('${campaign.id}')" class="btn btn-info btn-sm">View</button>
+                                <button onclick="removeCampaign('${campaign.name}','${campaign.id}')" class="btn btn-danger btn-sm">Remove</button>
+                            </td>
+                        `;
+                    } else if (campaign.status === 'Sending..') {
+                        row.innerHTML = `
+                            <td>${campaign.name}</td>
+                            <td>${campaign.template}</td>
+                            <td>${readableDate}</td>
+                            <td>${campaign.profile}</td>
+                            <td class="${statusClass}">${campaign.status}</td>
+                            <td class="${buttonsClass}"></td>
+                        `;
+                    } else {
+                        row.innerHTML = `
+                            <td>${campaign.name}</td>
+                            <td>${campaign.template}</td>
+                            <td>${readableDate}</td>
+                            <td>${campaign.profile}</td>
+                            <td class="${statusClass}">${campaign.status}</td>
+                            <td class="${buttonsClass}">
+                                <button onclick="removeCampaign('${campaign.name}','${campaign.id}')" class="btn btn-danger btn-sm">Remove</button>
+                            </td>
+                        `;
+                    }
+                    
                     tbody.appendChild(row);
                 });
 
@@ -420,6 +444,16 @@
                 case 'Failed': return 'status-failed';
                 case 'Sending..': return 'status-sending';
                 case 'Scheduled': return 'status-scheduled';
+                default: return '';
+            }
+        }
+
+        function getButtonsClass(status){
+            switch(status){
+                case 'Sent': return 'button-sent';
+                case 'Failed': return 'button-failed';
+                case 'Sending..': return 'button-sending';
+                case 'Scheduled': return 'button-scheduled';
                 default: return '';
             }
         }
@@ -516,6 +550,25 @@
                         console.log(statusCell);
                         // No need to update class name since it's dynamic
                     });
+
+                    // Update buttons dynamically based on status
+                    const actionsCells = row.querySelectorAll('.button-sent, .button-failed, .button-sending, .button-scheduled');
+                    actionsCells.forEach(actionCell => {
+                        actionCell.className = getButtonsClass(campaign.status);
+                        if (actionCell.className === 'button-sent') {
+                            actionCell.innerHTML = `
+                                <button onclick="viewLogs('${campaign.id}')" class="btn btn-info btn-sm">View</button>
+                                <button onclick="removeCampaign('${campaign.name}','${campaign.id}')" class="btn btn-danger btn-sm">Remove</button>
+                            `;
+                        } else if (actionCell.className === 'button-sending') {
+                            actionCell.innerHTML = '';
+                        } else if (actionCell.className === 'button-scheduled' || actionCell === 'button-failed'){
+                            actionCell.innerHTML = `
+                                <button onclick="removeCampaign('${campaign.name}','${campaign.id}')" class="btn btn-danger btn-sm">Remove</button>
+                            `;
+                        }
+                    });
+
                 } else {
                     console.error(`Row not found for campaign ${campaign.id}`);
                 }
