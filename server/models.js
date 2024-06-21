@@ -82,6 +82,11 @@ const Group = sequelizeEmployee.define('Group', {
     allowNull: false,
     unique: true
   },
+  normalized_name: {
+    type: DataTypes.STRING,
+    allowNull: false,
+    unique: true
+  },
   description: {
     type: DataTypes.STRING,
     allowNull: true,
@@ -96,6 +101,11 @@ Group.hasMany(Employee);
 
 const SendingProfile = sequelizeEmployee.define('SendingProfile', {
   name: {
+      type: DataTypes.STRING,
+      allowNull: false,
+      unique: true
+  },
+  normalized_name: {
       type: DataTypes.STRING,
       allowNull: false,
       unique: true
@@ -129,6 +139,11 @@ const sequelizeCampaigns = new Sequelize({
 
 const Campaign = sequelizeCampaigns.define('Campaign', {
   name: {
+      type: DataTypes.STRING,
+      allowNull: false,
+      unique: true
+  },
+  normalized_name: {
       type: DataTypes.STRING,
       allowNull: false,
       unique: true

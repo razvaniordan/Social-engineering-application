@@ -189,7 +189,7 @@
 
         // Example function that accesses multiple elements
         function updateUI() {
-            const elementsToCheck = ['modalCampaignName', 'modalEmailTemplate', 'modalLandingPage', 'modalLaunchDate', 'modalSendingProfile', 'modalGroups'];
+            const elementsToCheck = ['modalCampaignName', 'modalEmailTemplate', 'modalLaunchDate', 'modalSendingProfile', 'modalGroups'];
             elementsToCheck.forEach((elementId) => {
                 const element = document.getElementById(elementId);
                 console.log(elementId, element); // Check if any are null
@@ -386,12 +386,14 @@
             event.preventDefault();
             if (campaignStatus === 'Scheduled') {
                 const confirmExit = confirm(`Are you sure you want to remove the campaign "${campaignName}"? \nThis action cannot be undone. \n\nNote: The campaign is scheduled and will not be sent anymore.`);
+                if (!confirmExit) {
+                    return; // Stop the function if the user cancels the operation
+                }
             } else {
                 const confirmExit = confirm(`Are you sure you want to delete the campaign "${campaignName}" and its logs? \nThis action cannot be undone.`);
-            }
-
-            if (!confirmExit) {
-                return; // Stop the function if the user cancels the operation
+                if (!confirmExit) {
+                    return; // Stop the function if the user cancels the operation
+                }
             }
 
             const attemptRemoveCampaign = (token) => { // This attemptRemoveCampaign function will be called recursively if the token needs to be refreshed
@@ -500,7 +502,6 @@
                         messageDisplay.className = 'alert alert-success';
                         document.getElementById('modalCampaignName').value = '';
                         document.getElementById('modalEmailTemplate').value = '';
-                        document.getElementById('modalLandingPage').value = '';
                         document.getElementById('modalLaunchDate').value = '';
                         document.getElementById('modalSendingProfile').value = '';
                         document.getElementById('modalGroups').value = '';
@@ -637,7 +638,7 @@
             if (Array.isArray(items)) {
                 items.forEach(item => {
                     const option = document.createElement('option');
-                    if(elementId === 'modalLandingPage' || elementId === 'modalEmailTemplate') {
+                    if(elementId === 'modalEmailTemplate') {
                         option.value = item.name;
                         option.textContent = item.name;
                     } else {

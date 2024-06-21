@@ -525,11 +525,11 @@
                     showMessage(data.message, 'danger');
                     if (data.message.includes('Employee added')) {
                         messageDisplay.className = 'alert alert-success';
-                        document.getElementById('modalEmployeeFirstName').value = '';
-                        document.getElementById('modalEmployeeLastName').value = '';
-                        document.getElementById('modalEmployeeEmail').value = '';
                         fetchEmployees(); // Refresh the employee list
                     }
+                    document.getElementById('modalEmployeeFirstName').value = '';
+                    document.getElementById('modalEmployeeLastName').value = '';
+                    document.getElementById('modalEmployeeEmail').value = '';
                 })
                 .catch(error => {
                     if (error.message === 'Token expired or invalid') { // we will begin this part of code and refresh the token

@@ -10,7 +10,7 @@ async function initializeDatabase() {
   
   await sequelizeEmployee.sync({ force: true }); // This will drop the Employee table if it already exists
 
-  await sequelizeCampaigns.sync({ force: false }); // This will drop the LandingPage table if it already exists
+  await sequelizeCampaigns.sync({ force: true }); // This will drop the LandingPage table if it already exists
 
   console.log('Database & tables created!');
 }

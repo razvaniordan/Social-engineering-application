@@ -245,6 +245,7 @@ app.post('/addEmployee', authenticateToken, async (req, res) => {
 
 app.post('/addGroup', authenticateToken, async (req, res) => {
     const { name, description } = req.body;
+    normalized_name = name.toLowerCase();
 
     if (!name) {
         return res.status(400).json({ message: 'Group name is required' });
@@ -255,7 +256,7 @@ app.post('/addGroup', authenticateToken, async (req, res) => {
     }
 
     try {
-        await Group.create({ name, description });
+        await Group.create({ name, normalized_name, description });
         res.status(200).json({ message: `Group added: ${name}` });
     } catch (err) {
         if (err.name === 'SequelizeValidationError') {
@@ -482,7 +483,8 @@ function formatDateToRomanian() {
 
 
 app.post('/addCampaign', authenticateToken, async (req, res) => {
-    let { name, emailTemplateId, landingPageId, launchDate, sendingProfileId, groupIds } = req.body;
+    let { name, emailTemplateId, launchDate, sendingProfileId, groupIds } = req.body;
+    normalized_name = name.toLowerCase();
 
     if (!name || !launchDate || !sendingProfileId || !groupIds || groupIds.length === 0) {
         return res.status(400).json({ message: 'All the fields are required in order to launch a campaign!' });
@@ -499,6 +501,7 @@ app.post('/addCampaign', authenticateToken, async (req, res) => {
         sendingProfile = await SendingProfile.findByPk(sendingProfileId);
         const newCampaign = await Campaign.create({
             name,
+            normalized_name,
             template: emailTemplateId,
             date: launchDate,
             profile: sendingProfile.name
@@ -929,13 +932,14 @@ app.get('/getProfiles', async (req, res) => {
 
 app.post('/addSendingProfile', authenticateToken, async (req, res) => {
     const { name, smtpHost, smtpPort, username, password } = req.body;
+    const normalized_name = name.toLowerCase();
 
     if (!name || !smtpHost || !smtpPort || !username || !password) {
         return res.status(400).json({ message: 'All fields are required!' });
     }
 
     try {
-        await SendingProfile.create({ name, smtpHost, smtpPort, username, password });
+        await SendingProfile.create({ name, normalized_name, smtpHost, smtpPort, username, password });
         res.status(200).json({ message: `Sending profile added: ${name}` });
     } catch (err) {
         if (err.name === 'SequelizeUniqueConstraintError') {

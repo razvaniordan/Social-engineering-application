@@ -651,7 +651,7 @@
         .then(data => {
             let message = `Are you sure you want to delete the group ${name}?`;
             if (data.hasEmployees) {
-                message += '\nDeleting this group will also remove the employees associations with it.';
+                message += `\nDeleting this group will also remove the employees' associations with it.`;
             } else{
                 message += '\nThis group has no employees associated with it.';
             }
