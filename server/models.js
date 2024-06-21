@@ -97,7 +97,8 @@ Group.hasMany(Employee);
 const SendingProfile = sequelizeEmployee.define('SendingProfile', {
   name: {
       type: DataTypes.STRING,
-      allowNull: false
+      allowNull: false,
+      unique: true
   },
   smtpHost: {
       type: DataTypes.STRING,

@@ -608,19 +608,18 @@
                     showMessage(data.message, 'danger');
                     if (data.message.includes('Sending profile added')) {
                         messageDisplay.className = 'alert alert-success';
-                        var modalElement = document.getElementById('addProfileModal');
-                        var modalInstance = bootstrap.Modal.getInstance(modalElement);
-                        if (modalInstance) {
-                            modalInstance.hide();
-                        }
-                        document.getElementById('modalProfileName').value = '';
-                        document.getElementById('modalHost').value = '';
-                        document.getElementById('modalPort').value = '';
-                        document.getElementById('modalUsername').value = '';
-                        document.getElementById('modalPassword').value = '';
                         fetchProfiles();
                     }
-
+                    var modalElement = document.getElementById('addProfileModal');
+                    var modalInstance = bootstrap.Modal.getInstance(modalElement);
+                    if (modalInstance) {
+                        modalInstance.hide();
+                    }
+                    document.getElementById('modalProfileName').value = '';
+                    document.getElementById('modalHost').value = '';
+                    document.getElementById('modalPort').value = '';
+                    document.getElementById('modalUsername').value = '';
+                    document.getElementById('modalPassword').value = '';
                 })
                 .catch(error => {
                     if (error.message === 'Token expired or invalid') { // we will begin this part of code and refresh the token
@@ -635,7 +634,7 @@
                         showMessage(error.message, 'danger');
                     }
                 });
-            }
+            };
 
             sendAddProfileRequest(localStorage.getItem('accessToken'));
         }
