@@ -77,9 +77,6 @@ app.get('/validateToken', authenticateToken, (req, res) => {
 });
 
 const loadEmailTemplates = async () => {
-    // const templatesFilePath = path.join(__dirname, './templates/emailTemplates.json');
-    // console.log(`Loading templates from ${templatesFilePath}`);
-    // return JSON.parse(fs.readFileSync(templatesFilePath, 'utf8'));
 
     const templatesFilePath = path.join(__dirname, './templates/emailTemplates.json');
     try {
@@ -492,19 +489,20 @@ app.post('/addCampaign', authenticateToken, async (req, res) => {
     }
 
     try {
-        sendingProfile = await SendingProfile.findByPk(sendingProfileId);
-        const newCampaign = await Campaign.create({
-            name,
-            template: landingPageId,
-            date: launchDate,
-            profile: sendingProfile.name
-        });
 
         const emailTemplates = await loadEmailTemplates();
         const emailTemplate = emailTemplates.find(t => t.id === emailTemplateId);
         if(!emailTemplate) {
             throw new Error('Email template not found');
         }
+
+        sendingProfile = await SendingProfile.findByPk(sendingProfileId);
+        const newCampaign = await Campaign.create({
+            name,
+            template: emailTemplateId,
+            date: launchDate,
+            profile: sendingProfile.name
+        });
 
         // Fetch the email template and groups
         const groups = await Group.findAll({
@@ -525,7 +523,7 @@ app.post('/addCampaign', authenticateToken, async (req, res) => {
                     groupId: group.id
                 });
 
-                const personalizedLink = `http://localhost:4000/${landingPageId}/${newCampaign.id}/${employee.token}`;
+                const personalizedLink = `http://localhost:4000/${emailTemplateId}/${newCampaign.id}/${employee.token}`;
                 const ziua = formatDateToRomanian();
                 let personalizedHtmlContent = emailTemplate.content.replace('{{link}}', personalizedLink);
                 personalizedHtmlContent = personalizedHtmlContent.replace('{{dataxdatayzi}}', ziua);
