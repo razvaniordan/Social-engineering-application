@@ -351,7 +351,7 @@
                             <td class="${statusClass}">${campaign.status}</td>
                             <td class="${buttonsClass}">
                                 <button onclick="viewLogs('${campaign.id}')" class="btn btn-info btn-sm">View</button>
-                                <button onclick="removeCampaign('${campaign.name}','${campaign.id}')" class="btn btn-danger btn-sm">Remove</button>
+                                <button onclick="removeCampaign('${campaign.name}','${campaign.id}','${campaign.status}')" class="btn btn-danger btn-sm">Remove</button>
                             </td>
                         `;
                     } else if (campaign.status === 'Sending..') {
@@ -371,7 +371,7 @@
                             <td>${campaign.profile}</td>
                             <td class="${statusClass}">${campaign.status}</td>
                             <td class="${buttonsClass}">
-                                <button onclick="removeCampaign('${campaign.name}','${campaign.id}')" class="btn btn-danger btn-sm">Remove</button>
+                                <button onclick="removeCampaign('${campaign.name}','${campaign.id}','${campaign.status}')" class="btn btn-danger btn-sm">Remove</button>
                             </td>
                         `;
                     }
@@ -386,9 +386,14 @@
             }
         }
 
-        function removeCampaign(campaignName, campaignId) {
+        function removeCampaign(campaignName, campaignId, campaignStatus) {
             event.preventDefault();
-            const confirmExit = confirm(`Are you sure you want to remove the campaign ${campaignName}? This action cannot be undone.`);
+            if (campaignStatus === 'Scheduled') {
+                const confirmExit = confirm(`Are you sure you want to remove the campaign "${campaignName}"? \nThis action cannot be undone. \n\nNote: The campaign is scheduled and will not be sent anymore.`);
+            } else {
+                const confirmExit = confirm(`Are you sure you want to delete the campaign "${campaignName}" and its logs? \nThis action cannot be undone.`);
+            }
+
             if (!confirmExit) {
                 return; // Stop the function if the user cancels the operation
             }
@@ -558,13 +563,13 @@
                         if (actionCell.className === 'button-sent') {
                             actionCell.innerHTML = `
                                 <button onclick="viewLogs('${campaign.id}')" class="btn btn-info btn-sm">View</button>
-                                <button onclick="removeCampaign('${campaign.name}','${campaign.id}')" class="btn btn-danger btn-sm">Remove</button>
+                                <button onclick="removeCampaign('${campaign.name}','${campaign.id}','${campaign.status}')" class="btn btn-danger btn-sm">Remove</button>
                             `;
                         } else if (actionCell.className === 'button-sending') {
                             actionCell.innerHTML = '';
                         } else if (actionCell.className === 'button-scheduled' || actionCell === 'button-failed'){
                             actionCell.innerHTML = `
-                                <button onclick="removeCampaign('${campaign.name}','${campaign.id}')" class="btn btn-danger btn-sm">Remove</button>
+                                <button onclick="removeCampaign('${campaign.name}','${campaign.id}','${campaign.status}')" class="btn btn-danger btn-sm">Remove</button>
                             `;
                         }
                     });

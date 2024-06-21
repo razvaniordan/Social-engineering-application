@@ -321,7 +321,23 @@ app.delete('/removeCampaign', authenticateToken, async (req, res) => {
         await InformationData.destroy({ where: { CampaignId: campaignId } });
         const result = await Campaign.destroy({ where: { id: campaignId } });
         if (result > 0) {
-            res.status(200).json({ message: `Campaign ${campaignName} has been successfully removed.` });
+            // Remove related jobs from the email sending queue
+            const jobs = await sendEmailQueue.getJobs(['waiting', 'delayed']);
+            console.log('JOBSSS: ', JSON.stringify(jobs, null, 2));
+            console.log('CAMPAIGN ID: ' + campaignId);
+            var numberyes = 0;
+
+            for (const job of jobs) {
+                console.log('JOB DATA CAMPAIGN ID: ' + job.data.campaignId);
+                if (parseInt(job.data.campaignId) === parseInt(campaignId)) {
+                    await job.remove();
+                    numberyes = numberyes + 1;
+                    console.log(`Removed job ${job.id} for campaign ${campaignId}`);
+                }
+            }
+
+            console.log(`Number of jobs removed: ${numberyes}`);
+            res.status(200).json({ message: `Campaign ${campaignName} and related emails has been successfully removed.` });
         } else {
             res.status(404).json({ message: 'Campaign not found' });
         }
@@ -527,7 +543,7 @@ app.post('/addCampaign', authenticateToken, async (req, res) => {
                         subject: emailTemplate.subject,
                         content: personalizedHtmlContent,
                         profileId: sendingProfileId,
-                        campaignId: newCampaign.id
+                        campaignId: parseInt(newCampaign.id)
                     }, { delay });
                 }
                 
