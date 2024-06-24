@@ -91,7 +91,7 @@ const Group = sequelizeEmployee.define('Group', {
     type: DataTypes.STRING,
     allowNull: true,
     validate: {
-      len: [0, 30] // Limits the description to 50 characters
+      len: [0, 100] // Limits the description to 100 characters
     }
   } 
 });

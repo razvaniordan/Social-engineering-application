@@ -251,8 +251,8 @@ app.post('/addGroup', authenticateToken, async (req, res) => {
         return res.status(400).json({ message: 'Group name is required' });
     }
 
-    if (description && description.length > 30) {
-        return res.status(400).json({ message: 'Description must be 30 characters or less' });
+    if (description && description.length > 100) {
+        return res.status(400).json({ message: 'Description must be 100 characters or less' });
     }
 
     try {
@@ -932,6 +932,7 @@ app.get('/getProfiles', async (req, res) => {
 
 app.post('/addSendingProfile', authenticateToken, async (req, res) => {
     const { name, smtpHost, smtpPort, username, password } = req.body;
+    username = username.toLowerCase();
     const normalized_name = name.toLowerCase();
 
     if (!name || !smtpHost || !smtpPort || !username || !password) {

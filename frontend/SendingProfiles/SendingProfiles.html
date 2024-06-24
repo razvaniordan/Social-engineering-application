@@ -632,7 +632,17 @@
                         });
                     } else {
                         showMessage(error.message, 'danger');
-                    }
+                        var modalElement = document.getElementById('addProfileModal');
+                        var modalInstance = bootstrap.Modal.getInstance(modalElement);
+                        if (modalInstance) {
+                            modalInstance.hide();
+                        }
+                        document.getElementById('modalProfileName').value = '';
+                        document.getElementById('modalHost').value = '';
+                        document.getElementById('modalPort').value = '';
+                        document.getElementById('modalUsername').value = '';
+                        document.getElementById('modalPassword').value = '';
+                        }
                 });
             };
 

@@ -86,8 +86,8 @@
                                 <div class="form-group">
                                     <label for="modalGroupDescription">Description</label>
                                     
-                                    <textarea id="modalGroupDescription" class="form-control" placeholder="Group description" maxlength="30"></textarea>
-                                    <small id="descriptionCharCount">0/30</small>
+                                    <textarea id="modalGroupDescription" class="form-control" placeholder="Group description" maxlength="100"></textarea>
+                                    <small id="descriptionCharCount">0/100</small>
                                 </div>
                             </div>
                             <div class="modal-footer">
@@ -114,8 +114,8 @@
                                 <div class="form-group">
                                     <label for="editModalGroupDescription">Description</label>
                                     
-                                    <textarea id="editModalGroupDescription" class="form-control" placeholder="Group description" maxlength="30"></textarea>
-                                    <small id="editDescriptionCharCount">0/30</small>
+                                    <textarea id="editModalGroupDescription" class="form-control" placeholder="Group description" maxlength="100"></textarea>
+                                    <small id="editDescriptionCharCount">0/100</small>
                                     <input type="hidden" id="originalGroupDescription">
                                 </div>
                             </div>
@@ -595,7 +595,7 @@
             if (modalInstance) {
                 modalInstance.hide();
             }
-            document.getElementById('descriptionCharCount').textContent = '0/30';
+            document.getElementById('descriptionCharCount').textContent = '0/100';
         };
 
         sendAddGroupRequest(localStorage.getItem('accessToken'));
@@ -690,7 +690,7 @@
         document.getElementById('originalGroupId').value = group.id; // hidden field to store the group id
         document.getElementById('originalGroupDescription').value = group.description; // hidden field to store the original description
 
-        document.getElementById('editDescriptionCharCount').textContent = `${group.description.length}/30`;
+        document.getElementById('editDescriptionCharCount').textContent = `${group.description.length}/100`;
 
         var editModal = new bootstrap.Modal(document.getElementById('editGroupModal'));
         editModal.show();
