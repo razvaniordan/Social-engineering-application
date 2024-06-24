@@ -160,24 +160,31 @@ body {
 }
 
 h1 {
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    margin-top: -5px;
-    text-align: left;
-    text-shadow: 1px 1px 3px #000000;
-    color: rgb(7, 120, 196);
-    background-color: rgb(112, 142, 189);
-    padding: 10px;
-    border-color: #911a11;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-top: -20px;
+  margin-left: -25px;
+  margin-right: -25px;
+  text-align: left;
+  text-shadow: 1px 1px 3px #000000;
+  color: rgb(255, 255, 255);
+  background-color: #0e2238;
+  padding: 10px 20px;
+  border-color: #911a11;
+  box-sizing: border-box;
 
-    font-family: "Yanone Kaffeesatz", sans-serif;
-    font-optical-sizing: auto;
-    font-weight: 600;
-    font-size: 2.5rem;
-    font-style: normal;
+  font-family: "Yanone Kaffeesatz", sans-serif;
+  font-optical-sizing: auto;
+  font-weight: 600;
+  font-size: 2.5rem;
+  font-style: normal;
 
-    box-shadow: 0px 5px 10px #4779bb;
+  box-shadow: 0px 5px 10px #0e2238;
+}
+
+#searchAndAddGroup {
+  margin-top: 10px;
 }
 
 .button-container .btn {

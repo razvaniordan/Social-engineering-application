@@ -71,10 +71,6 @@
                     Groups
                 </h1>
     
-                <button type="button" class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#addGroupModal">
-                    Add Group
-                </button>
-    
                 <div class="modal fade" id="addGroupModal" tabindex="-1" aria-labelledby="addGroupModalLabel" aria-hidden="true">
                     <div class="modal-dialog">
                         <div class="modal-content">
@@ -170,8 +166,13 @@
     
                 <div id="messageDisplay" class="alert" style="display: none;"></div>
     
-                <input type="text" id="searchGroup" class="form-control" placeholder="Search group by name">
-    
+                <div id="searchAndAddGroup" class="form-group d-flex">
+                    <input type="text" id="searchGroup" class="form-control" placeholder="Search group by name">
+                    <button type="button" class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#addGroupModal">
+                        Add Group
+                    </button>
+                </div>
+                
                 <div id="paginationControls">
                     <button onclick="changePage(-1, event)" class="btn btn-secondary">Previous</button>
                     <span id="pageIndicator"></span>

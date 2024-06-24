@@ -72,10 +72,6 @@
                     Sending profiles
                 </h1>
     
-                <button type="button" class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#addProfileModal">
-                    Create profile
-                </button>
-    
                 <div class="modal fade" id="addProfileModal" tabindex="-1" aria-labelledby="addProfileModalLabel" aria-hidden="true">
                     <div class="modal-dialog">
                         <div class="modal-content">
@@ -180,7 +176,11 @@
                 
                 <div id="searchProfile" class="form-group d-flex">
                     <input type="text" id="searchProfileName" class="form-control" placeholder="Search profile">
+                    <button type="button" class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#addProfileModal">
+                        Create profile
+                    </button>
                 </div>
+                
     
                 <div id="paginationControls">
                     <button onclick="changePage(-1, event)" class="btn btn-secondary">Previous</button>
