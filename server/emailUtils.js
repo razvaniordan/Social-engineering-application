@@ -1,4 +1,4 @@
-const { SendingProfile, Campaign } = require('./models');
+const { SendingProfile, Campaign } = require('./modelsMySQL');
 const nodemailer = require('nodemailer');
 
 async function getSendingProfile(profileId) {

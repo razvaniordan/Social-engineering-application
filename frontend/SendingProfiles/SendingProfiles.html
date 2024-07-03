@@ -600,7 +600,10 @@
                         throw new Error('Token expired or invalid'); // if we get this error
                     } else if (response.status === 400) {
                         throw new Error('The filling of all fields is required!');
+                    } else if (response.status === 413) {
+                        throw new Error('SMTP Port must be a number!');
                     } else if (response.status === 409) {
+                        //throw new Error('Name already exists!');
                         return response.json();
                     }
                 })

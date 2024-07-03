@@ -2,7 +2,7 @@ require('dotenv').config();
 
 const express = require('express');
 const path = require('path');
-const { User, RefreshToken, Employee, SendingProfile, Group, Campaign, InformationData, ClickLog, EmailOpen, CampaingEmployee } = require('./models');
+const { User, RefreshToken, Employee, SendingProfile, Group, Campaign, InformationData, ClickLog, EmailOpen, CampaingEmployee } = require('./modelsMySQL');
 const bodyParser = require('body-parser');
 const bcrypt = require('bcryptjs');
 const cors = require('cors');
@@ -931,12 +931,16 @@ app.get('/getProfiles', async (req, res) => {
 });
 
 app.post('/addSendingProfile', authenticateToken, async (req, res) => {
-    const { name, smtpHost, smtpPort, username, password } = req.body;
+    let { name, smtpHost, smtpPort, username, password } = req.body;
     username = username.toLowerCase();
     const normalized_name = name.toLowerCase();
 
     if (!name || !smtpHost || !smtpPort || !username || !password) {
         return res.status(400).json({ message: 'All fields are required!' });
+    }
+
+    if (Number.isInteger(parseInt(smtpPort, 10)) === false) {
+        return res.status(413).json({ message: 'SMTP Port must be a number' });
     }
 
     try {

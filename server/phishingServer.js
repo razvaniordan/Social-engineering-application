@@ -1,6 +1,6 @@
 require('dotenv').config();
 const express = require('express');
-const { Employee, ClickLog, InformationData } = require('./models');
+const { Employee, ClickLog, InformationData } = require('./modelsMySQL');
 const path = require('path');
 const app = express();
 const port = 4000;

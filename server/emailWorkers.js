@@ -1,6 +1,6 @@
 const Queue = require('bull');
 const sendEmail = require('./emailUtils'); 
-const { Campaign } = require('./models');
+const { Campaign } = require('./modelsMySQL');
 
 const sendEmailQueue = new Queue('sendEmail', 'redis://127.0.0.1:6379');
 
