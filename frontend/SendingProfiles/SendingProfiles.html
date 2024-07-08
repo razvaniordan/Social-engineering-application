@@ -472,6 +472,8 @@
                     } else if (response.status === 401 || response.status === 403) { // Unauthorized, so try to refresh the token
                         console.log('Token expired. Attempting to refresh token...');
                         throw new Error('Token expired or invalid'); // if we get this error
+                    } else if (response.status === 413) {
+                        throw new Error('SMTP Port must be a number!');
                     } else if (response.status === 400) {
                         throw new Error('All fields are required!');
                     } 
@@ -497,7 +499,18 @@
                             showMessage('Failed to refresh token. Please log in again.', 'danger');
                         });
                     } else {
-                        showMessage('Error: ' + error.message, 'danger');
+                        showMessage(error.message, 'danger');
+                        var modalElement = document.getElementById('editProfileModal');
+                        var modalInstance = bootstrap.Modal.getInstance(modalElement);
+                        if (modalInstance) {
+                            modalInstance.hide();
+                        }
+                        document.getElementById('modalProfileName').value = '';
+                        document.getElementById('modalHost').value = '';
+                        document.getElementById('modalPort').value = '';
+                        document.getElementById('modalUsername').value = '';
+                        document.getElementById('modalPassword').value = '';
+
                     }
                 });
             };
@@ -645,7 +658,7 @@
                         document.getElementById('modalPort').value = '';
                         document.getElementById('modalUsername').value = '';
                         document.getElementById('modalPassword').value = '';
-                        }
+                    }
                 });
             };
 

@@ -773,8 +773,12 @@ app.put('/updateGroup', authenticateToken, async (req, res) => {
             res.status(200).json({ message: `Group updated successfully from ${oldName} to ${newName}` });
         }
     } catch (err) {
-        console.error('Error updating group:', err);
-        res.status(500).json({ message: 'An error occurred while updating the group.' });
+        if (err.name === 'SequelizeValidationError') {
+            return res.status(400).json({ message: err.errors.map(e => e.message).join('; ') });
+        } else if (err.name === 'SequelizeUniqueConstraintError') {
+            return res.status(409).json({ message: 'A group with this name already exists' });
+        }
+        return res.status(500).json({ message: 'An error occurred while updating the group.' });
     }
 });
 
@@ -812,6 +816,9 @@ app.put('/updateEmployee', authenticateToken, async (req, res) => {
             res.status(200).json({ message: `Employee updated successfully from "${oldFirstName} ${oldLastName}" to "${newFirstName} ${newLastName}" and its email address to ${newEmailLowerCase}` });
         }
     } catch (err) {
+        if (err.name === 'SequelizeUniqueConstraintError') {
+            return res.status(409).json({ message: 'An employee with this email already exists' });
+        }
         console.error('Error updating employee:', err);
         res.status(500).json({ message: 'An error occurred while updating the employee.' });
     }
@@ -822,6 +829,10 @@ app.put('/updateProfile', authenticateToken, async (req, res) => {
 
     if (!newName || !newHost || !newPort || !newUsername || !newPassword) {
         return res.status(400).json({ message: 'All fields are required' });
+    }
+
+    if (Number.isInteger(parseInt(newPort, 10)) === false) {
+        return res.status(413).json({ message: 'SMTP Port must be a number' });
     }
 
     try {
