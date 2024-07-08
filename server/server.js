@@ -529,6 +529,7 @@ app.post('/addCampaign', authenticateToken, async (req, res) => {
                 const personalizedLink = `http://localhost:4000/${emailTemplateId}/${newCampaign.id}/${employee.token}`;
                 const ziua = formatDateToRomanian();
                 let personalizedHtmlContent = emailTemplate.content.replace('{{link}}', personalizedLink);
+                personalizedHtmlContent = personalizedHtmlContent.replace('{{employeeName}}', employee.firstName);
                 personalizedHtmlContent = personalizedHtmlContent.replace('{{dataxdatayzi}}', ziua);
                 personalizedHtmlContent = personalizedHtmlContent.replace('{{campaignId}}', newCampaign.id);
                 personalizedHtmlContent = personalizedHtmlContent.replace('{{employeeToken}}', employee.token);

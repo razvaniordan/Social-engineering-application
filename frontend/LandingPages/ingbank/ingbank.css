@@ -1,29 +1,97 @@
 @import url('https://fonts.googleapis.com/css2?family=Abel&family=Open+Sans:ital,wght@0,300..800;1,300..800&family=Space+Grotesk:wght@300..700&family=Yanone+Kaffeesatz:wght@200..700&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Noto+Sans+JP:wght@100..900&family=Open+Sans:ital,wght@0,300..800;1,300..800&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Roboto:wght@400;700&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Lato:wght@400;700&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Noto+Sans:wght@400;700&display=swap');
+
+@font-face {
+    font-family: INGMe;
+    font-style: normal;
+    font-weight: 400;
+    src: url(3c61ef3553284e176612.woff2) format("woff2")
+}
+
+@font-face {
+    font-family: INGMee;
+    font-style: normal;
+    font-weight: 700;
+    src: url(c46819568c63444d6f6a.woff2) format("woff2")
+}
 
 body {
 
-    font-family: 'Open Sans', arial, helvetica, sans-serif !important;;
-    background-image: url('background2.jpg');
-    background-size: cover;
+    font-family: 'Open Sans', arial, helvetica, sans-serif !important;
+    font-size: 14px;
+    color: #1e2233;
+    background-image: url('backgroundFinal.png');
+    background-size: 100% 100%;
+    background-attachment: scroll;
     background-position: center;
     margin: 0;
-    height: 100vh;
+    height: 140vh;
+    max-height: 200vh;
     display: flex;
     align-items: center;
     justify-content: center;
     background-color: #f4f4f4; /* Light gray background if the image fails to load */
 }
 
+h2 {
+    font-size: 18px;
+    font-weight: normal;
+    margin-top: 25px;
+    margin-bottom: 35px;
+}
+
+.bold-text {
+    font-weight: bold; /* Apply bold only to the span with this class */
+}
+
+#formPassword {
+    margin-top: 25px;
+}
+
+.ing-ro-input__input[type="password"] {
+    font-family: Noto Sans Japanese;
+    letter-spacing: 8px;
+    font-size: 15px;
+    color: rgb(255, 98, 0);
+}
+
+#username {
+    font-family: INGMe, Arial, Helvetica, sans-serif; /* or any other font you prefer */
+    font-size: 14px; /* Adjust the font size as needed */
+    color: #333; /* Set the desired color */
+}
+
+#password {
+    font-size: 45px;
+}
+
+#password::placeholder {
+    font-family: INGMe, Arial, Helvetica, sans-serif;
+    letter-spacing: 0px;
+    font-size: 15px;
+}
+
+::placeholder {
+    font-size: 15px;
+}
+
 .login-container {
-    font-family: 'Open Sans', sans-serif;
-    width: 350px;
-    background-color: rgba(255, 255, 255, 0.9); /* Semi-transparent background */
+    font-family: INGMe, Arial, Helvetica, sans-serif;
+    font-size: 12px;
+    width: 420px;
+    height: 500px;
+    background-color: rgba(255, 255, 255, 0.95); /* Semi-transparent background */
     padding: 30px 40px;
     border-radius: 10px;
-    box-shadow: 0 8px 16px rgba(0,0,0,0.1);
+    box-shadow: 0 8px 16px rgba(0, 0, 0, 0.1);
     display: flex;
     flex-direction: column;
     align-items: center;
+    margin-bottom: 550px;
+    margin-top: 200px;
 }
 
 .login-form label {
@@ -35,7 +103,6 @@ body {
 
 .form-group {
     width: 110%;
-    margin-bottom: 20px;
     align-items:flex-start;
 }
 
@@ -43,15 +110,39 @@ body {
     font-size: 12px;
     opacity: 0.8;
     display: block;
-    margin-bottom: 10px;
+    margin-top: 6px;
+    margin-bottom: 8px;
 }
 
 .form-group input {
-    width: 282px;
+    width: 255px;
+    height: 26px;
     padding: 12px;
-    border: 1px solid #ccc;
+    border: 1px solid #D9D9D9;
     border-radius: 4px;
     margin-bottom: 20px;
+}
+
+/* Change border color to blue when input boxes are focused */
+.form-group input:focus {
+    border-color: rgb(12, 146, 229);
+    outline: none; /* Optional: Removes the default outline */
+    border-width: 2px;
+}
+
+/* Error message styling */
+.error-message {
+    color: rgb(199, 16, 16);
+    font-size: 14px;
+    margin-top: -10px;
+    margin-bottom: 10px;
+    max-width: 260px;
+    word-wrap: break-word;
+}
+
+/* Error border styling */
+.input-error {
+    border: 2px solid red;
 }
 
 input::placeholder {
@@ -67,23 +158,31 @@ input::placeholder {
 }
 
 .login-form button {
+    font-family: INGMee, Arial, Helvetica, sans-serif;
     display: inline-flex;
     justify-content: center;
     align-items: center;
     border-radius: 8px;
     position: relative;
     box-sizing: border-box;
-    width: 100%;
-    max-width: 272px;
+    width: 271px;
+    height: 48px;
     min-height: 44px;
     padding: 8px 16px;
     font-size: 19px;
     font-weight: 700;
     color: rgb(255, 255, 255);
     background-color: rgb(255, 98, 0);
+    border-color: #ffffff;
     text-align: center;
     margin: 0px auto;
-    margin-left: 17px;
+    margin-top: 25px;
+    margin-left: 8px;
+    margin-bottom: 5px;
+}
+
+.login-form button svg {
+    margin-right: 10px;
 }
 
 .login-form button:hover {
@@ -92,12 +191,14 @@ input::placeholder {
 }
 
 .login-form a {
-    color: #0077CC;
+    color: rgb(82, 81, 153);
+    font-size: 16px;
+    font-weight: 700;
     text-align: center;
     display: block;
     margin-top: 20px;
     text-decoration: none;
-    font-size: 14px;
+    margin-bottom: 50px;
 }
 
 .login-form a:hover {

