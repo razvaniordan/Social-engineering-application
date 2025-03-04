@@ -78,6 +78,7 @@ Open [http://localhost:3000](http://localhost:3000) and log in with credentials 
 
 8. **Run phishing campaigns:**
 - Generate phishing links.
+- Use the third party password for the Sending Profile's email account, NOT the account's password
 - Track clicks, email opens, and employee actions.
 
 ## 🛡️ Security Considerations
