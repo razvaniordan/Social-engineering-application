@@ -1,4 +1,6 @@
 # Ignore node modules
 node_modules/
 server/node_modules/
-frontend/node_modules/
+
+# Ignore .env file
+.env

@@ -2,19 +2,17 @@ require('dotenv').config();
 
 const express = require('express');
 const path = require('path');
-const { User, RefreshToken, Employee, SendingProfile, Group, Campaign, InformationData, ClickLog, EmailOpen, CampaingEmployee } = require('./modelsMySQL');
+const { User, RefreshToken, Employee, SendingProfile, Group, Campaign, InformationData, ClickLog, EmailOpen, CampaingEmployee } = require('./models');
 const bodyParser = require('body-parser');
 const bcrypt = require('bcryptjs');
 const cors = require('cors');
-const JWT = require('./JWT');
+const tokenHelper = require('./tokenHelper');
 const jwt = require('jsonwebtoken');
 const { access } = require('fs');
 const { Op, Sequelize } = require('sequelize');
 const cookieParser = require('cookie-parser');
 const crypto = require('crypto');
-const { group, profile, log } = require('console');
 const fs = require('fs').promises;
-const nodemailer = require('nodemailer');
 const sendEmailQueue = require('./emailWorkers');
 
 const app = express();
@@ -160,7 +158,7 @@ app.post('/token', async (req, res) => {
 
     jwt.verify(refreshToken, process.env.REFRESH_TOKEN_SECRET, (err, user) => {
         if (err) return res.sendStatus(403);
-        const accessToken = JWT.createToken(user);
+        const accessToken = tokenHelper.createToken(user);
         res.json({ accessToken: accessToken });
     });
 });
@@ -181,11 +179,10 @@ app.post('/login', async (req, res) => {
     if (!user || !bcrypt.compareSync(password, user.password)) {
         return res.status(401).json({ message: 'Invalid username or password' });
     }
-    accessToken = JWT.createToken(user);
+    accessToken = tokenHelper.createToken(user);
     refreshToken = jwt.sign({ username: user.username }, process.env.REFRESH_TOKEN_SECRET);
     await RefreshToken.create({ token: refreshToken, username: user.username });
-    console.log(accessToken);
-    console.log(refreshToken);
+
     res.cookie('refreshToken', refreshToken, { httpOnly: true, sameSite: 'strict' });
     res.json({ accessToken: accessToken });
 });

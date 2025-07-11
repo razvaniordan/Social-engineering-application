@@ -1,19 +1,16 @@
-const { sequelize, User, sequelizeToken, RefreshToken, sequelizeEmployee, Employee, sequelizeClickLog, ClickLog, LandingPage, sequelizeCampaigns, SendingProfile, Group } = require('./models');
+const { sequelize, User } = require('./models');
 
 async function initializeDatabase() {
-  // Initialize User database and table
-  await sequelize.sync({ force: false });
-  //await User.create({ username: 'razvan', password: 'razvan' });
-  
-  // Initialize RefreshToken database and table
-  await sequelizeToken.sync({ force: false });
-  
-  await sequelizeEmployee.sync({ force: true });
-
-  await sequelizeCampaigns.sync({ force: false });
-
-  console.log('Database & tables created!');
-
+  try {
+    await sequelize.authenticate();
+    console.log('Connection has been established successfully.');
+    // Sync all defined models to the DB.
+    await sequelize.sync({ force: true });
+    await User.create({ username: 'razvan', password: 'razvan' });
+    console.log('Database & tables created!');
+  } catch (error) {
+    console.error('Unable to connect to the database:', error);
+  }
 }
 
 initializeDatabase();
