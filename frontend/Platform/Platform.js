@@ -10,7 +10,7 @@
     }
 
     function editEmp() {
-        window.location.href = '/edit';
+        window.location.href = '/employees';
     }
 
     function sendingProfiles() {
@@ -18,7 +18,7 @@
     }
 
     function sendEmails() {
-        window.location.href = '/send';
+        window.location.href = '/campaigns';
     }
 
     function groups() {

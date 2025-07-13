@@ -1,8 +1,11 @@
 const Queue = require('bull');
 const sendEmail = require('../services/emailUtils.js'); 
 const { Campaign } = require('../models');
+const requireEnv = require('../../utils/requireEnv.js');
 
-const sendEmailQueue = new Queue('sendEmail', 'redis://127.0.0.1:6379');
+const redisUrl = requireEnv('REDIS_URL');
+
+const sendEmailQueue = new Queue('sendEmail', redisUrl);
 
 sendEmailQueue.process(async (job, done) => {
     const { email, subject, content, profileId, campaignId } = job.data;

@@ -5,7 +5,7 @@ const authenticateToken = require('../middlewares/authMiddleware.js');
 const crypto = require('crypto');  
 
 // Endpoint to get all employees
-router.get('/employees', async (req, res) => {
+router.get('/employeesList', authenticateToken, async (req, res) => {
     const search = req.query.search || '';
     const page = parseInt(req.query.page) || 0;
     const pageSize = parseInt(req.query.size) || 10;

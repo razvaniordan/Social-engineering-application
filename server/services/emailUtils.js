@@ -7,12 +7,12 @@ async function getSendingProfile(profileId) {
 
 async function sendEmail(recipient, subject, content, sendingProfileId, campaignId) {
     const profile = await getSendingProfile(sendingProfileId);
-    console.log('Sending email using profile: ', profile);
-    console.log('Host: ', profile.smtpHost);
-    console.log('Port: ', profile.smtpPort);
-    console.log('Username: ', profile.username);
-    console.log('Password: ', profile.password);
-    console.log('Secure: ', profile.secure);
+    // console.log('Sending email using profile: ', profile);
+    // console.log('Host: ', profile.smtpHost);
+    // console.log('Port: ', profile.smtpPort);
+    // console.log('Username: ', profile.username);
+    // console.log('Password: ', profile.password);
+    // console.log('Secure: ', profile.secure);
 
     const transporter = nodemailer.createTransport({
         host: profile.smtpHost,

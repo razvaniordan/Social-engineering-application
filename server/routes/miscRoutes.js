@@ -1,6 +1,7 @@
 const router = require('express').Router();
 const path = require('path');
 const fs = require('fs').promises;
+const authenticateToken = require('../middlewares/authMiddleware.js');
 
 // This and the app.use(express.static()) I use in order to change the path of the html and connect frontend to the backend of the login
 // and the app would run on localhost:3000 
@@ -16,11 +17,11 @@ router.get('/groups', (_req, res) => {
     res.sendFile(path.join(__dirname, '../../frontend/EditEmployees/Groups.html'));
 });
 
-router.get('/edit', (_req, res) => {
+router.get('/employees', (_req, res) => {
     res.sendFile(path.join(__dirname, '../../frontend/EditEmployees/EditEmployees.html'));
 });
 
-router.get('/send', (_req, res) => {
+router.get('/campaigns', (_req, res) => {
     res.sendFile(path.join(__dirname, '../../frontend/SendEmails/SendEmails.html'));
 });
 
@@ -46,7 +47,7 @@ const loadEmailTemplates = async () => {
     }
 };
 
-router.get('/email-templates', async (_req, res) => {
+router.get('/email-templates', authenticateToken, async (_req, res) => {
 
     try {
         const templates = await loadEmailTemplates();
@@ -78,7 +79,7 @@ async function getHtmlFiles(dir) {
     return htmlFiles;
 }
 
-router.get('/landing-pages', async (_req, res) => {
+router.get('/landing-pages', authenticateToken, async (_req, res) => {
     try {
         const landingPages = await getHtmlFiles(LANDING_PAGES_DIR);
         res.json(landingPages);

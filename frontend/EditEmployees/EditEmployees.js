@@ -11,7 +11,7 @@
     });
 
     function editEmp() {
-        window.location.href = '/edit';
+        window.location.href = '/employees';
     }
 
     function sendingProfiles() {
@@ -19,7 +19,7 @@
     }
 
     function sendEmails() {
-        window.location.href = '/send';
+        window.location.href = '/campaigns';
     }
 
     function groups() {
@@ -107,7 +107,7 @@
             }
         };
 
-        fetch(`/employees?page=${currentPage}&size=${pageSize}&search=${encodeURIComponent(searchInput.value)}`)
+        fetch(`/employeesList?page=${currentPage}&size=${pageSize}&search=${encodeURIComponent(searchInput.value)}`)
             .then(handleResponse) // This will check for 401 status and attempt to refresh the token.
             //.then(response => response.json())
             .then(data => {

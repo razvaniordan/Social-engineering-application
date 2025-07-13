@@ -89,7 +89,7 @@ router.delete('/removeGroup', authenticateToken, async (req, res) => {
     }
 });
 
-router.get('/checkGroupEmployees', async (req, res) => {
+router.get('/checkGroupEmployees', authenticateToken, async (req, res) => {
     const { name } = req.query;
 
     try {
@@ -114,7 +114,7 @@ router.get('/checkGroupEmployees', async (req, res) => {
     }
 });
 
-router.get('/groupMembers', async (req, res) => {
+router.get('/groupMembers', authenticateToken, async (req, res) => {
     const { name, page = 0, pageSize = 10, search = '' } = req.query;
 
     try {
@@ -189,7 +189,7 @@ router.post('/removeMembersFromGroup', authenticateToken, async (req, res) => {
     }
 });
 
-router.get('/groupsList', async (req, res) => {
+router.get('/groupsList', authenticateToken, async (req, res) => {
     const search = req.query.search || '';
     const page = parseInt(req.query.page) || 0;
     const pageSize = parseInt(req.query.size) || 10;

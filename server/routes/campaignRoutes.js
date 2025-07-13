@@ -108,7 +108,7 @@ router.post('/addCampaign', authenticateToken, async (req, res) => {
     }
 });
 
-router.get('/campaignsList', async (req, res) => {
+router.get('/campaignsList', authenticateToken, async (req, res) => {
     const search = req.query.search || '';
     const page = parseInt(req.query.page) || 0;
     const pageSize = parseInt(req.query.size) || 10;
@@ -131,7 +131,7 @@ router.get('/campaignsList', async (req, res) => {
     }
 });
 
-router.get('/campaignEmployees', async (req, res) => {
+router.get('/campaignEmployees', authenticateToken, async (req, res) => {
     const { campaignId, page, size, employeeName } = req.query;
     const limit = parseInt(size);
     const offset = parseInt(page) * limit;
@@ -192,7 +192,7 @@ router.delete('/removeCampaign', authenticateToken, async (req, res) => {
     }
 });
 
-router.get('/logsList', async (req, res) => {
+router.get('/logsList', authenticateToken, async (req, res) => {
     const { campaignId, page = 0, size = 10, employeeName, employeeToken } = req.query;
     const limit = parseInt(size);
     const offset = parseInt(page) * limit;
@@ -296,7 +296,7 @@ router.get('/logsList', async (req, res) => {
     }
 });
 
-router.get('/campaignDetails', async (req, res) => {
+router.get('/campaignDetails', authenticateToken, async (req, res) => {
     const campaignId = req.query.campaignId;
     if (!campaignId) {
         return res.status(400).json({ message: 'Campaign ID is required' });

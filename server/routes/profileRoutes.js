@@ -3,7 +3,7 @@ const { SendingProfile } = require('../models');
 const authenticateToken = require('../middlewares/authMiddleware.js');
 const { Op } = require('sequelize');
 
-router.get('/sending-profiles', async (req, res) => {
+router.get('/sending-profiles', authenticateToken, async (req, res) => {
     try {
       const profiles = await SendingProfile.findAll();
       res.json(profiles);
@@ -13,7 +13,7 @@ router.get('/sending-profiles', async (req, res) => {
     }
 });
 
-router.get('/getProfiles', async (req, res) => {
+router.get('/getProfiles', authenticateToken, async (req, res) => {
     const search = req.query.search || '';
     const page = parseInt(req.query.page) || 0;
     const pageSize = parseInt(req.query.size) || 10;
