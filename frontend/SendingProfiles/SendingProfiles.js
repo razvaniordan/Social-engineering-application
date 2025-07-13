@@ -1,4 +1,3 @@
-
     const hamBurger = document.querySelector(".toggle-btn");
 
     hamBurger.addEventListener("click", function () {
@@ -172,6 +171,82 @@
         } else {
             listContainer.textContent = 'No profile found.';
         }
+    }
+
+    function addProfile() {
+        const name = document.getElementById('modalProfileName').value;
+        const smtpHost = document.getElementById('modalHost').value;
+        const smtpPort = document.getElementById('modalPort').value;
+        const username = document.getElementById('modalUsername').value;
+        const password = document.getElementById('modalPassword').value;
+
+        const sendAddProfileRequest = (token) => {
+            fetch('/addSendingProfile', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'Authorization': `Bearer ${token}`
+                },
+                body: JSON.stringify({ name, smtpHost, smtpPort, username, password }),
+            })
+            .then(response => {
+                if (response.ok) {
+                    return response.json();
+                } else if (response.status === 401 || response.status === 403) { // Unauthorized, so try to refresh the token
+                    console.error('Token expired. Attempting to refresh token...');
+                    throw new Error('Token expired or invalid'); // if we get this error
+                } else if (response.status === 400) {
+                    throw new Error('The filling of all fields is required!');
+                } else if (response.status === 413) {
+                    throw new Error('SMTP Port must be a number!');
+                } else if (response.status === 409) {
+                    //throw new Error('Name already exists!');
+                    return response.json();
+                }
+            })
+            .then(data => {
+                showMessage(data.message, 'danger');
+                if (data.message.includes('Sending profile added')) {
+                    messageDisplay.className = 'alert alert-success';
+                    fetchProfiles();
+                }
+                var modalElement = document.getElementById('addProfileModal');
+                var modalInstance = bootstrap.Modal.getInstance(modalElement);
+                if (modalInstance) {
+                    modalInstance.hide();
+                }
+                document.getElementById('modalProfileName').value = '';
+                document.getElementById('modalHost').value = '';
+                document.getElementById('modalPort').value = '';
+                document.getElementById('modalUsername').value = '';
+                document.getElementById('modalPassword').value = '';
+            })
+            .catch(error => {
+                if (error.message === 'Token expired or invalid') { // we will begin this part of code and refresh the token
+                    refreshToken().then(newToken => {
+                        sendAddProfileRequest(newToken); // try to send the request again with the new token
+                        console.log('Token refreshed successfully!');
+                    }).catch(error => {
+                        showMessage('Failed to refresh token. Please log in again.', 'danger');
+                        logout(true); // redirect to the login page and logout
+                    });
+                } else {
+                    showMessage(error.message, 'danger');
+                    var modalElement = document.getElementById('addProfileModal');
+                    var modalInstance = bootstrap.Modal.getInstance(modalElement);
+                    if (modalInstance) {
+                        modalInstance.hide();
+                    }
+                    document.getElementById('modalProfileName').value = '';
+                    document.getElementById('modalHost').value = '';
+                    document.getElementById('modalPort').value = '';
+                    document.getElementById('modalUsername').value = '';
+                    document.getElementById('modalPassword').value = '';
+                }
+            });
+        };
+
+        sendAddProfileRequest(localStorage.getItem('accessToken'));
     }
 
     function removeProfile(id, profileName) {
@@ -390,80 +465,4 @@
         messageDisplay.textContent = message; // Set the text of the message display area
         messageDisplay.style.display = 'block'; // Make the message display area visible
         messageDisplay.className = `alert alert-${type}`;
-    }
-
-    function addProfile() {
-        const name = document.getElementById('modalProfileName').value;
-        const smtpHost = document.getElementById('modalHost').value;
-        const smtpPort = document.getElementById('modalPort').value;
-        const username = document.getElementById('modalUsername').value;
-        const password = document.getElementById('modalPassword').value;
-
-        const sendAddProfileRequest = (token) => {
-            fetch('/addSendingProfile', {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json',
-                    'Authorization': `Bearer ${token}`
-                },
-                body: JSON.stringify({ name, smtpHost, smtpPort, username, password }),
-            })
-            .then(response => {
-                if (response.ok) {
-                    return response.json();
-                } else if (response.status === 401 || response.status === 403) { // Unauthorized, so try to refresh the token
-                    console.error('Token expired. Attempting to refresh token...');
-                    throw new Error('Token expired or invalid'); // if we get this error
-                } else if (response.status === 400) {
-                    throw new Error('The filling of all fields is required!');
-                } else if (response.status === 413) {
-                    throw new Error('SMTP Port must be a number!');
-                } else if (response.status === 409) {
-                    //throw new Error('Name already exists!');
-                    return response.json();
-                }
-            })
-            .then(data => {
-                showMessage(data.message, 'danger');
-                if (data.message.includes('Sending profile added')) {
-                    messageDisplay.className = 'alert alert-success';
-                    fetchProfiles();
-                }
-                var modalElement = document.getElementById('addProfileModal');
-                var modalInstance = bootstrap.Modal.getInstance(modalElement);
-                if (modalInstance) {
-                    modalInstance.hide();
-                }
-                document.getElementById('modalProfileName').value = '';
-                document.getElementById('modalHost').value = '';
-                document.getElementById('modalPort').value = '';
-                document.getElementById('modalUsername').value = '';
-                document.getElementById('modalPassword').value = '';
-            })
-            .catch(error => {
-                if (error.message === 'Token expired or invalid') { // we will begin this part of code and refresh the token
-                    refreshToken().then(newToken => {
-                        sendAddProfileRequest(newToken); // try to send the request again with the new token
-                        console.log('Token refreshed successfully!');
-                    }).catch(error => {
-                        showMessage('Failed to refresh token. Please log in again.', 'danger');
-                        logout(true); // redirect to the login page and logout
-                    });
-                } else {
-                    showMessage(error.message, 'danger');
-                    var modalElement = document.getElementById('addProfileModal');
-                    var modalInstance = bootstrap.Modal.getInstance(modalElement);
-                    if (modalInstance) {
-                        modalInstance.hide();
-                    }
-                    document.getElementById('modalProfileName').value = '';
-                    document.getElementById('modalHost').value = '';
-                    document.getElementById('modalPort').value = '';
-                    document.getElementById('modalUsername').value = '';
-                    document.getElementById('modalPassword').value = '';
-                }
-            });
-        };
-
-        sendAddProfileRequest(localStorage.getItem('accessToken'));
     }

@@ -1,9 +1,10 @@
 require('dotenv').config();
 const app = require('./app');
 const path = require('path');
+const requireEnv = require('../utils/requireEnv.js');
 const fs = require('fs').promises;
 
-const PORT = process.env.SERVER_PORT;
+const PORT = requireEnv('SERVER_PORT');
 
 async function initializeServer() {
     try {

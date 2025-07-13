@@ -1,5 +1,3 @@
-require('dotenv').config({path: './server/.env'});
-
 const jwt = require('jsonwebtoken');
 
 const createToken = (user) => {

@@ -1,5 +1,5 @@
 const router = require('express').Router();
-const { Group, Employee } = require('../models.js');
+const { Group, Employee } = require('../models');
 const authenticateToken = require('../middlewares/authMiddleware.js');
 const { Op } = require('sequelize');
 

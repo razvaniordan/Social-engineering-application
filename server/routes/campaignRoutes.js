@@ -1,10 +1,10 @@
 const router = require('express').Router();
-const { Employee, Group, SendingProfile, Campaign, InformationData, ClickLog, EmailOpen, CampaignEmployee } = require('../models.js');
+const { Employee, Group, SendingProfile, Campaign, InformationData, ClickLog, EmailOpen, CampaignEmployee } = require('../models');
 const authenticateToken = require('../middlewares/authMiddleware.js');
 const { Op, Sequelize } = require('sequelize');
 const path = require('path');
 const fs = require('fs').promises;
-const sendEmailQueue = require('../emailWorkers');
+const sendEmailQueue = require('../jobs/emailWorkers.js');
 
 function formatDateToRomanian() {
     const date = new Date();
