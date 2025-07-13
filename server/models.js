@@ -197,7 +197,7 @@ const Employee = sequelize.define('Employee', {
     }
   });
   
-  const CampaingEmployee = sequelize.define('CampaignEmployee', {
+  const CampaignEmployee = sequelize.define('CampaignEmployee', {
     campaignId: {
       type: DataTypes.INTEGER,
       allowNull: false
@@ -244,5 +244,5 @@ InformationData.belongsTo(Campaign);
 Campaign.hasOne(InformationData);
 
 
-module.exports = { sequelize, User, RefreshToken, Employee, Group, SendingProfile, InformationData, Campaign, ClickLog, EmailOpen, CampaingEmployee };
+module.exports = { sequelize, User, RefreshToken, Employee, Group, SendingProfile, InformationData, Campaign, ClickLog, EmailOpen, CampaignEmployee };
   
