@@ -55,12 +55,12 @@ router.put('/updateGroup', authenticateToken, async (req, res) => {
         if (oldName === newName && oldDescription === description) {
             res.status(200).json({ message: `No changes made to group: ${newName}. No update necessary.` });
         } else if (oldName === newName) {
-            group.description = description || group.description; // Keep existing description if not provided
+            group.description = description; // Keep existing description if not provided
             await group.save();
             res.status(200).json({ message: `Group description updated successfully for: ${newName}` });
         } else {
             group.name = newName;
-            group.description = description || group.description; // Keep existing description if not provided
+            group.description = description; // Keep existing description if not provided
             await group.save();
             res.status(200).json({ message: `Group updated successfully from ${oldName} to ${newName}` });
         }

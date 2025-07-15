@@ -45,7 +45,7 @@ router.post('/addSendingProfile', authenticateToken, async (req, res) => {
         return res.status(400).json({ message: 'All fields are required!' });
     }
 
-    if (Number.isInteger(parseInt(smtpPort, 10)) === false) {
+    if (!/^\d+$/.test(smtpPort)) {
         return res.status(413).json({ message: 'SMTP Port must be a number' });
     }
 

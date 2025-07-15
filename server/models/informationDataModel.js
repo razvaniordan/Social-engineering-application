@@ -8,7 +8,10 @@ module.exports = (sequelize, DataTypes) => {
             type: DataTypes.STRING,
             allowNull: false
         },
-        page: {
+        page: { 
+            // This is the name of the template => the value transmitted in this "page" field must match the "name" variable from the emailTemplates.json file
+            // Also the "id" value from the emailTemplates.json file must match the name of the folder from frontend/LandingPages/template (in this case the id value should be "template")
+            // These requirements are case sensitive
             type: DataTypes.STRING,
             allowNull: false
         },

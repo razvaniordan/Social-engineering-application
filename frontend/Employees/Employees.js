@@ -394,6 +394,12 @@ function saveEmployeeChanges() {
             }
         });
     };
+    var modalElement = document.getElementById('editEmployeeModal');
+    var modalInstance = bootstrap.Modal.getInstance(modalElement);
+    if (modalInstance) {
+        modalInstance.hide();
+    }
+
     attemptEditEmployee(localStorage.getItem('accessToken'));
 }
 

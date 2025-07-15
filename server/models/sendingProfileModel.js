@@ -5,7 +5,7 @@ module.exports = (sequelize, DataTypes) => {
             allowNull: false,
             unique: true
         },
-        normalized_name: {
+        normalized_name: { // this is the field "name" in lowercase used in order to compare the content no matter the case of characters
             type: DataTypes.STRING,
             allowNull: false,
             unique: true

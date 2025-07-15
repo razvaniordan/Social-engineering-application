@@ -48,7 +48,12 @@ document.addEventListener('DOMContentLoaded', () => {
         e.preventDefault();
         changeMembersPage(1, currentGroupName);
     });
+    
+    document.getElementById('searchGroup').addEventListener('input', debouncedLoadGroups);
+    document.getElementById('searchMemberInput').addEventListener('input', debouncedLoadMembers);
+});
 
+document.addEventListener('DOMContentLoaded', function() {
     // Existing event listener for the add group modal
     document.getElementById('modalGroupDescription').addEventListener('input', () => {
         const currentLength = this.value.length;
@@ -62,9 +67,6 @@ document.addEventListener('DOMContentLoaded', () => {
         const maxLength = this.getAttribute('maxlength');
         document.getElementById('editDescriptionCharCount').textContent = `${currentLength}/${maxLength}`;
     });
-    
-    document.getElementById('searchGroup').addEventListener('input', debouncedLoadGroups);
-    document.getElementById('searchMemberInput').addEventListener('input', debouncedLoadMembers);
 });
 
 let currentPage = 0; // Current page index
@@ -511,6 +513,12 @@ function saveGroupChanges() {
             }
         });
     };
+    var modalElement = document.getElementById('addGroupModal');
+    var modalInstance = bootstrap.Modal.getInstance(modalElement);
+    if (modalInstance) {
+        modalInstance.hide();
+    }
+    document.getElementById('descriptionCharCount').textContent = '0/100';
 
     attemptEditGroup(localStorage.getItem('accessToken'));
 }
