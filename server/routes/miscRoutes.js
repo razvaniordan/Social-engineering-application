@@ -10,19 +10,19 @@ router.get('/', (_req, res) => {
 });
 
 router.get('/home', (_req, res) => {
-    res.sendFile(path.join(__dirname, '../../frontend/Platform/Platform.html'));
+    res.sendFile(path.join(__dirname, '../../frontend/Home/Home.html'));
 });
 
 router.get('/groups', (_req, res) => {
-    res.sendFile(path.join(__dirname, '../../frontend/EditEmployees/Groups.html'));
+    res.sendFile(path.join(__dirname, '../../frontend/Groups/Groups.html'));
 });
 
 router.get('/employees', (_req, res) => {
-    res.sendFile(path.join(__dirname, '../../frontend/EditEmployees/EditEmployees.html'));
+    res.sendFile(path.join(__dirname, '../../frontend/Employees/Employees.html'));
 });
 
 router.get('/campaigns', (_req, res) => {
-    res.sendFile(path.join(__dirname, '../../frontend/SendEmails/SendEmails.html'));
+    res.sendFile(path.join(__dirname, '../../frontend/Campaigns/Campaigns.html'));
 });
 
 router.get('/profiles', (_req, res) => {
@@ -30,7 +30,7 @@ router.get('/profiles', (_req, res) => {
 });
 
 router.get('/campaignLogs', (_req, res) => {
-    res.sendFile(path.join(__dirname, '../../frontend/Logs/Logs.html'));
+    res.sendFile(path.join(__dirname, '../../frontend/CampaignLogs/CampaignLogs.html'));
 });
 
 

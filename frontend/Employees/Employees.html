@@ -1,0 +1,199 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Employees</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet" integrity="sha384-QWTKZyjpPEjISv5WaRU9OFeRpok6YctnYmDr5pNlyT2bRjXh0JMhjY6hW+ALEwIH" crossorigin="anonymous">
+    <link href="https://fonts.googleapis.com/css2?family=Roboto:wght@400;700&display=swap" rel="stylesheet">
+    <link href="https://cdn.lineicons.com/4.0/lineicons.css" rel="stylesheet" />
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet" integrity="sha384-QWTKZyjpPEjISv5WaRU9OFeRpok6YctnYmDr5pNlyT2bRjXh0JMhjY6hW+ALEwIH" crossorigin="anonymous">
+    <link rel="icon" type="image/png" href="../assets/favicon-196x196.png" sizes="196x196" />
+    <link rel="stylesheet" href="/Employees/Employees.css">
+</head>
+<body>
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js" integrity="sha384-YvpcrYf0tY3lHB60NNkmXc5s9fDVZLESaAA55NDzOxhy9GkcIdslK1eN7N6jIeHz" crossorigin="anonymous"></script>
+
+    <div class="wrapper d-flex">
+        <aside id="sidebar">
+            <div class="d-flex">
+                <button class="toggle-btn" type="button">
+                    <i class="lni lni-grid-alt"></i>
+                </button>
+                <div class="sidebar-logo">
+                    <a href="#">Dashboard</a>
+                </div>
+            </div>
+
+            <ul class="sidebar-nav">
+                <li class="sidebar-item">
+                    <a href="#" class="sidebar-link" id="navHome">
+                        <i class="lni lni-home"></i>
+                        <span>Home</span>
+                    </a>
+                </li>
+                <li class="sidebar-item">
+                    <a href="#" class="sidebar-link" id="navSendingProfiles">
+                        <i class="lni lni-user"></i>
+                        <span>Sending profiles</span>
+                    </a>
+                </li>
+                <li class="sidebar-item">
+                    <a href="#" class="sidebar-link has-dropdown collapsed" data-bs-toggle="collapse"
+                        data-bs-target="#auth" aria-expanded="false" aria-controls="auth">
+                        <i class="lni lni-agenda"></i>
+                        <span>Employees</span>
+                    </a>
+                    <ul id="auth" class="sidebar-dropdown list-unstyled collapse" data-bs-parent="#sidebar">
+                        <li class="sidebar-item">
+                            <a href="#" class="sidebar-link" id="navEmployees">Employees</a>
+                        </li>
+                        <li class="sidebar-item">
+                            <a href="#" class="sidebar-link" id="navGroups">Groups</a>
+                        </li>
+                    </ul>
+                </li>
+                <li class="sidebar-item">
+                    <a href="#" class="sidebar-link" id="navCampaigns">
+                        <i class="lni lni-popup"></i>
+                        <span>Campaigns</span>
+                    </a>
+                </li>
+            </ul>
+
+            <div class="sidebar-footer">
+                <a href="#" class="sidebar-link" id="navLogout">
+                    <i class="lni lni-exit"></i>
+                    <span>Logout</span>
+                </a>
+            </div>
+        </aside>
+
+        <div class="main p-3">
+            <form action="">
+                <h1>
+                    Employees
+                </h1>
+    
+                <div class="modal fade" id="addEmployeeModal" tabindex="-1" aria-labelledby="addEmployeeModalLabel" aria-hidden="true">
+                    <div class="modal-dialog">
+                        <div class="modal-content">
+                            <div class="modal-header">
+                                <h5 class="modal-title" id="addEmployeeModalLabel">Add New Employee</h5>
+                                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                            </div>
+                            <div class="modal-body">
+                                <div class="form-group">
+                                    <label for="modalEmployeeFirstName">First Name</label>
+                                    <input type="text" id="modalEmployeeFirstName" class="form-control" placeholder="Enter first name">
+                                </div>
+                                <div class="form-group">
+                                    <label for="modalEmployeeLastName">Last Name</label>
+                                    <input type="text" id="modalEmployeeLastName" class="form-control" placeholder="Enter last name">
+                                </div>
+                                <div class="form-group">
+                                    <label for="modalEmployeeEmail">Email</label>
+                                    <input type="email" id="modalEmployeeEmail" class="form-control" placeholder="Enter email">
+                                </div>
+                            </div>
+                            <div class="modal-footer">
+                                <button type="button" class="btn btn-danger" data-bs-dismiss="modal">Close</button>
+                                <button type="button" class="btn btn-success" id="btnAddEmployee">Add employee</button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+    
+                <div class="modal fade" id="editEmployeeModal" tabindex="-1" aria-labelledby="editEmployeeModalLabel" aria-hidden="true">
+                    <div class="modal-dialog">
+                        <div class="modal-content">
+                            <div class="modal-header">
+                                <h5 class="modal-title" id="editEmployeeModalLabel">Edit Employee</h5>
+                                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                            </div>
+                            <div class="modal-body">
+                                <div class="form-group">
+                                    <label for="editModalEmployeeFirstName">First Name</label>
+                                    <input type="text" id="editModalEmployeeFirstName" class="form-control" placeholder="Enter first name">
+                                    <input type="hidden" id="originalModalEmployeeFirstName">
+                                </div>
+                                <div class="form-group">
+                                    <label for="editModalEmployeeLastName">Last Name</label>
+                                    <input type="text" id="editModalEmployeeLastName" class="form-control" placeholder="Enter last name">
+                                    <input type="hidden" id="originalModalEmployeeLastName">
+                                </div>
+                                <div class="form-group">
+                                    <label for="editModalEmployeeEmail">Email</label>
+                                    <input type="email" id="editModalEmployeeEmail" class="form-control" placeholder="Enter email">
+                                    <input type="hidden" id="originalModalEmployeeEmail">
+                                </div>
+                            </div>
+                            <input type="hidden" id="originalEmployeeId">
+                            <div class="modal-footer">
+                                <button type="button" class="btn btn-danger" data-bs-dismiss="modal">Close</button>
+                                <button type="button" class="btn btn-success" id="btnSaveEmployeeChanges">Save</button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+    
+                <div class="modal fade" id="assignGroupModal" tabindex="-1" aria-labelledby="assignGroupModalLabel" aria-hidden="true">
+                    <div class="modal-dialog">
+                        <div class="modal-content">
+                            <input type="hidden" id="selectedEmployeeId">
+                            <div class="modal-header">
+                                <h5 class="modal-title" id="assignGroupModalLabel">Assign Group</h5>
+                                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                            </div>
+                            <div class="modal-body">
+                                <input type="text" id="searchGroupInput" class="form-control" placeholder="Search group" onkeyup="debouncedLoadGroups()">
+                                <table id="groupListModal" class="table">
+                                    <thead>
+                                        <tr>
+                                            <th scope="col">Group Name</th>
+                                            <th scope="col">Action</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody>
+                                        <!-- Groups will be loaded here dynamically -->
+                                    </tbody>
+                                </table>
+                            </div>
+                            <div class="modal-footer">
+                                <nav aria-label="Page navigation">
+                                    <ul class="pagination">
+                                        <li class="page-item"><a class="page-link" href="#" id="btnPrevGroupPage">Previous</a></li>
+                                        <li class="page-item"><a class="page-link" href="#" id="btnNextGroupPage">Next</a></li>
+                                    </ul>
+                                </nav>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+    
+                <div id="messageDisplay" class="alert" style="display: none;"></div>
+    
+                <div id="searchAndGenerate" class="form-group d-flex">
+                    <input type="text" id="searchEmail" class="form-control" placeholder="Search employee">
+                    <button type="button" class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#addEmployeeModal">
+                        Add Employee
+                    </button>
+                </div>
+    
+                <div id="paginationControls">
+                    <button id="btnPrevPage" class="btn btn-secondary">Previous</button>
+                    <span id="pageIndicator"></span>
+                    <button id="btnNextPage" class="btn btn-secondary">Next</button>
+                </div>
+    
+                <div id="employeeList" class="list-group mt-3"></div>
+                
+            </form>
+        </div>
+    </div>
+
+    <script src="../shared/app.js" type="module"></script>
+    <script src="../shared/auth.js" type="module"></script>
+    <script src="/Employees/Employees.js" type="module"></script>
+</body>
+</html>
