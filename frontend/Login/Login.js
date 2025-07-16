@@ -36,24 +36,26 @@ document.addEventListener('DOMContentLoaded', () => {
         .then(response => response.json())
         .then(data => {
             if (data.message === 'Invalid username or password') {
-            // Handle login failure, e.g., show an error message
-            alert('Invalid username or password');
-            formData.set('username', ''); // Clear username from formData
-            formData.set('password', ''); // Clear password from formData
-            document.querySelector('input[name="username"]').value = ''; // Clear username input field
-            document.querySelector('input[name="password"]').value = ''; // Clear password input field
+                // Handle login failure, e.g., show an error message
+                alert('Invalid username or password');
+                formData.set('username', ''); // Clear username from formData
+                formData.set('password', ''); // Clear password from formData
+                document.querySelector('input[name="username"]').value = ''; // Clear username input field
+                document.querySelector('input[name="password"]').value = ''; // Clear password input field
+            } else if (data.message === 'Password wrong') {
+                alert('Parola gresita');
             } else {
-            // Handle login success, e.g., redirect to another page
-            const accessToken = data.accessToken;
-            localStorage.setItem('accessToken', accessToken);
-            const token = localStorage.getItem('accessToken');
-            fetch('/home', {
-                headers: {
-                'Authorization': `Bearer ${token}`
-                }
-            })
+                // Handle login success, e.g., redirect to another page
+                const accessToken = data.accessToken;
+                localStorage.setItem('accessToken', accessToken);
+                const token = localStorage.getItem('accessToken');
+                fetch('/home', {
+                    headers: {
+                    'Authorization': `Bearer ${token}`
+                    }
+                })
 
-            window.location.href = '/home';
+                window.location.href = '/home';
             }
         })
         .catch(error => console.error('Error:', error));

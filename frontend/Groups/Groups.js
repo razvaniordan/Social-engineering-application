@@ -9,6 +9,33 @@ function goToSendingProfiles() { window.location.href = '/profiles'; }
 function goToCampaigns() { window.location.href = '/campaigns'; }
 function goToGroups() { window.location.href = '/groups'; }
 
+document
+  .getElementById('addGroupModal')
+  .addEventListener('shown.bs.modal', () => {
+      const desc = document.getElementById('modalGroupDescription');
+      const counter = document.getElementById('descriptionCharCount');
+      if (!desc || !counter) return; // just in case
+
+      desc.addEventListener('input', () => {
+          counter.textContent =
+              `${desc.value.length}/${desc.maxLength}`;
+      });
+  });
+
+document
+  .getElementById('editGroupModal')
+  .addEventListener('shown.bs.modal', () => {
+      const desc = document.getElementById('editModalGroupDescription');
+      const counter = document.getElementById('editDescriptionCharCount');
+      if (!desc || !counter) return; // just in case
+
+      desc.addEventListener('input', () => {
+          counter.textContent =
+              `${desc.value.length}/${desc.maxLength}`;
+      });
+  });
+
+
 document.addEventListener('DOMContentLoaded', () => {
 
     refreshToken().then(() => {
@@ -51,22 +78,6 @@ document.addEventListener('DOMContentLoaded', () => {
     
     document.getElementById('searchGroup').addEventListener('input', debouncedLoadGroups);
     document.getElementById('searchMemberInput').addEventListener('input', debouncedLoadMembers);
-});
-
-document.addEventListener('DOMContentLoaded', function() {
-    // Existing event listener for the add group modal
-    document.getElementById('modalGroupDescription').addEventListener('input', () => {
-        const currentLength = this.value.length;
-        const maxLength = this.getAttribute('maxlength');
-        document.getElementById('descriptionCharCount').textContent = `${currentLength}/${maxLength}`;
-    });
-
-    // Add event listener for the edit group modal
-    document.getElementById('editModalGroupDescription').addEventListener('input', () => {
-        const currentLength = this.value.length;
-        const maxLength = this.getAttribute('maxlength');
-        document.getElementById('editDescriptionCharCount').textContent = `${currentLength}/${maxLength}`;
-    });
 });
 
 let currentPage = 0; // Current page index

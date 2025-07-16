@@ -11,9 +11,10 @@ router.post('/login', async (req, res) => {
     const { username, password } = req.body;
 
     const user = await User.findOne({ where: { username } });
-    if (!user || !bcrypt.compareSync(password, user.password)) {
+    if (!user) {
         return res.status(401).json({ message: 'Invalid username or password' });
-    }
+    } else if(!bcrypt.compareSync(password, user.password))
+        return res.status(401).json({ message: 'Password wrong' });
 
     accessToken = tokenHelper.createToken(user);
     refreshToken = jwt.sign({ username: user.username }, process.env.REFRESH_TOKEN_SECRET);

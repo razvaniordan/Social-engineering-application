@@ -1,0 +1,61 @@
+services:
+    mysql:
+        image: mysql:8
+        restart: unless-stopped
+        environment:
+            MYSQL_ROOT_PASSWORD: ${DB_PASS}
+            MYSQL_DATABASE: ${DB_NAME}
+        ports: ["3307:3306"]
+        healthcheck:
+            test: ["CMD-SHELL", "mysqladmin ping -h 127.0.0.1 -p${DB_PASS} --silent"]
+            interval: 10s
+            retries: 5
+            start_period: 15s
+        volumes: [db_data:/var/lib/mysql]
+        
+    redis:
+        image: redis:7
+        ports: ["6379:6379"]
+        volumes: [redis_data:/data]
+        
+    db-init:
+        build: .
+        command: ["node", "./server/seed/initdb.js"]
+        env_file: .env
+        depends_on:
+            mysql:
+                condition: service_healthy #wait first for mysql server
+        volumes:
+            - db_data:/var/lib/mysql
+        restart: "no"
+        
+    api:
+        build: .
+        environment:
+            - TZ=Europe/Bucharest
+        command: ["node", "server/index.js"]
+        env_file: .env
+        ports: ["3000:3000"]
+        depends_on:
+            db-init:
+                condition: service_completed_successfully
+            redis:
+                condition: service_started
+        restart: unless-stopped
+        
+    phishing:
+        build: .
+        environment:
+            - TZ=Europe/Bucharest
+        container_name: phishing
+        command: ["node", "phishing-server/index.js"]
+        env_file: .env
+        ports: ["4000:4000"]
+        depends_on:
+            redis:
+                condition: service_started
+        restart: unless-stopped
+
+volumes:
+    db_data:
+    redis_data:
