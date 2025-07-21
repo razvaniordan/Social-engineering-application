@@ -46,7 +46,7 @@ export function handleResponse(response) {
 
 export function logout(failedAuth = false) {
     if (failedAuth) {
-        alert('Session expired, please login again.');
+        //alert('Session expired, please login again.');
     }
     // Here we send a request to the server to remove the refresh token from the database
     fetch('/logout', {
