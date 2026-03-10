@@ -1,10 +1,10 @@
-# 🎯 Social Engineering Simulation Platform
+# Social Engineering Simulation Platform
 
 This platform simulates phishing attacks to help organizations assess employee awareness and response to social engineering threats.
 
 ---
 
-## 🚀 Features
+## Features
 
 - **Containerized Architecture:** Easily deploy the app using Docker and Docker Compose.
 - **MySQL Database Support:** Managed via Docker volume for persistence.
@@ -18,14 +18,14 @@ This platform simulates phishing attacks to help organizations assess employee a
 
 ---
 
-## ⚙️ Requirements
+## Requirements
 
 | Tool / Component | Source |
 |------------------|--------|
 | Docker              | [Download](https://www.docker.com/products/docker-desktop/) |
 | Docker Compose | [Documentation](https://docs.docker.com/compose/) |
 
-## 📦 Getting Started
+## Getting Started
 
 ---
 
@@ -49,7 +49,7 @@ Before running the application, you must configure the environment variables. A 
 
 ---
 
-### 👤 Admin Credentials (used to log in to the platform)
+### Admin Credentials (used to log in to the platform)
 - `USERNAME`: Admin username for the initial platform login.
 - `PASSWORD`: Admin password. If unchanged and the user already exists, a message will display that the password was updated (even if the value didn’t change).
 - `DROP_DB`: Set to `true` if you want to drop **all** database tables and reinitialize them on app start. Recommended for fresh starts only.
@@ -57,7 +57,7 @@ Before running the application, you must configure the environment variables. A 
 
 ---
 
-### 🗄️ MySQL Database Configuration
+### MySQL Database Configuration
 - `DB_NAME`: Name of the MySQL schema (should match `MYSQL_DATABASE` in docker-compose).
 - `DB_USER`: MySQL username (e.g., `root`).
 - `DB_PASS`: Password for MySQL user (should match `MYSQL_ROOT_PASSWORD` in docker-compose).
@@ -68,20 +68,20 @@ Before running the application, you must configure the environment variables. A 
 
 ---
 
-### 🧠 Redis Configuration (for email tracking jobs)
+### Redis Configuration (for email tracking jobs)
 - `REDIS_URL`: Redis connection URL.
   - Use `redis://redis:6379` for Docker-based development.
   - Use `redis://127.0.0.1:6379` for local (non-Docker) setups.
 
 ---
 
-### 🌐 Application Ports
+### Application Ports
 - `SERVER_PORT`: Port on which the main Express server runs (default: `3000`).
 - `PHISHING_PORT`: Port for the phishing simulation server (default: `4000`).
 
 ---
 
-### 🔐 JWT Secret Keys (Token Security)
+### JWT Secret Keys (Token Security)
 You must generate two different secure 128-character hex strings (64 random bytes) for token signing:
 
 - **Option 1: Local Node.js (if installed):**
@@ -125,7 +125,7 @@ Log in using the `USERNAME` and `PASSWORD` from your `.env`.
 
 ---
 
-## 🔁 Reset Options
+## Reset Options
 
 You can control data resets via `.env` flags:
 
@@ -143,17 +143,17 @@ docker compose up --build
 
 ---
 
-## 📧 Email Campaigns (via Redis)
+## Email Campaigns (via Redis)
 
 The platform queues email sends using Redis.
 
-✅ No need to manually install Redis – it runs in a Docker container.
+No need to manually install Redis – it runs in a Docker container.
 
-⚠️ When configuring a Sending Profile (SMTP), use an **App Password** (third-party password) for the email account. Never use your actual email login password (it won't work).
+When configuring a Sending Profile (SMTP), use an **App Password** (third-party password) for the email account. Never use your actual email login password (it won't work).
 
 ---
 
-## 🛡️ Security Considerations
+## Security Considerations
 
 - JWT secrets are mandatory and must be securely generated.
 - Access tokens are short-lived; refresh tokens are stored safely in the DB.
@@ -162,14 +162,14 @@ The platform queues email sends using Redis.
 
 ---
 
-## 📄 Phishing Campaign Templates Disclaimer
+## Phishing Campaign Templates Disclaimer
 
 The application includes several pre-defined templates for emails and phishing pages, used during simulated phishing campaigns. These templates:
 
 - Were fully functional and visually accurate at the time they were added.
 - Serve only as **demonstration samples** to showcase the platform’s capabilities.
 
-⚠️ **Important:**
+**Important:**
 
 - These templates may no longer perfectly replicate the original websites if the source websites have changed or updated their layout or structure.
 - The included email and site templates are **not editable by end users**.
@@ -178,9 +178,5 @@ The application includes several pre-defined templates for emails and phishing p
 Use the existing templates strictly for internal testing and awareness simulations.
 
 ---
-
-## 📚 License
-
-This project is released under the [MIT License](LICENSE).
 
 
