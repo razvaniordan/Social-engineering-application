@@ -25,9 +25,9 @@ This platform simulates phishing attacks to help organizations assess employee a
 | Docker              | [Download](https://www.docker.com/products/docker-desktop/) |
 | Docker Compose | [Documentation](https://docs.docker.com/compose/) |
 
-## Getting Started
-
 ---
+
+## Getting Started
 
 ### 1. Clone the Repository
 
@@ -36,9 +36,7 @@ git clone https://github.com/razvaniordan/Social-engineering-application.git
 cd Social-engineering-application
 ```
 
----
-
-## 2. Environment Configuration (.env)
+### 2. Environment Configuration (.env)
 
 Before running the application, you must configure the environment variables. A template file named `.env.example` is provided in the root directory. To get started:
 
@@ -47,15 +45,12 @@ Before running the application, you must configure the environment variables. A 
 
 2. **Edit the `.env` file** to include your custom settings:
 
----
-
 ### Admin Credentials (used to log in to the platform)
 - `USERNAME`: Admin username for the initial platform login.
 - `PASSWORD`: Admin password. If unchanged and the user already exists, a message will display that the password was updated (even if the value didn’t change).
 - `DROP_DB`: Set to `true` if you want to drop **all** database tables and reinitialize them on app start. Recommended for fresh starts only.
 - `DROP_USER_DB`: Set to `true` to drop and recreate only the `Users` table. Useful for refreshing user credentials without affecting campaign data.
 
----
 
 ### MySQL Database Configuration
 - `DB_NAME`: Name of the MySQL schema (should match `MYSQL_DATABASE` in docker-compose).
@@ -66,20 +61,17 @@ Before running the application, you must configure the environment variables. A 
   - Use `127.0.0.1` or `localhost` if running locally.
 - `DB_PORT`: Set to `3306` (default internal MySQL port). Even if port `3307` is mapped on host, containers must use `3306`.
 
----
 
 ### Redis Configuration (for email tracking jobs)
 - `REDIS_URL`: Redis connection URL.
   - Use `redis://redis:6379` for Docker-based development.
   - Use `redis://127.0.0.1:6379` for local (non-Docker) setups.
 
----
 
 ### Application Ports
 - `SERVER_PORT`: Port on which the main Express server runs (default: `3000`).
 - `PHISHING_PORT`: Port for the phishing simulation server (default: `4000`).
 
----
 
 ### JWT Secret Keys (Token Security)
 You must generate two different secure 128-character hex strings (64 random bytes) for token signing:
